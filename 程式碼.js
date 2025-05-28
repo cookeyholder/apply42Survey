@@ -252,6 +252,17 @@ function getLimitOfSchools() {
 function doPost(e) {
     try {
         Logger.log('doPost 請求參數：%s', JSON.stringify(e.parameters));
+
+        // 檢查是否已過截止時間
+        const parameters = getParameters();
+        const endTime = new Date(parameters['系統關閉時間']);
+        const now = new Date();
+
+        if (now > endTime) {
+            Logger.log('doPost 已過截止時間，不更新資料');
+            return ContentService.createTextOutput('志願調查已結束');
+        }
+
         const joinedParam = e.parameters.isJoinedInput?.[0] || '否';
         const isJoined = joinedParam === '是';
         let departmentChoices = [];
@@ -280,7 +291,7 @@ function doPost(e) {
             updateSpecificRow(row, [joinedParam, ...departmentChoices]);
         }
 
-        return ContentService.createTextOutput('成功更新報名資料。');
+        return ContentService.createTextOutput('成功更新志願選擇資料。');
     } catch (err) {
         Logger.log('doPost 發生錯誤：%s\n%s', err.message, err.stack);
         return ContentService.createTextOutput(
