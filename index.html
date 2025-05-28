@@ -164,8 +164,30 @@
                 endTimeBox.innerHTML = formatDateTime(endTime);
 
                 if (timeLeft < 0) {
-                    countdownTimer.innerHTML = "報名已截止囉！";
+                    countdownTimer.innerHTML = "<span id='countdownTimer' class='text-danger'><strong>報名已截止囉！</strong></span>";
                     clearInterval(timerInterval);
+
+                    // 停用所有表單元素
+                    const isJoinedSwitch = document.getElementById('isJoinedSwitch');
+                    const submitButtons = document.querySelectorAll('button[type="submit"]');
+                    const departmentChoices = document.querySelectorAll('.departmentChoices');
+
+                    // 停用 switch
+                    if (isJoinedSwitch) {
+                        isJoinedSwitch.disabled = true;
+                    }
+
+                    // 停用所有送出按鈕
+                    submitButtons.forEach(button => {
+                        button.disabled = true;
+                        button.title = '報名已截止';
+                    });
+
+                    // 停用所有志願選擇下拉選單
+                    departmentChoices.forEach(select => {
+                        select.disabled = true;
+                    });
+
                     return;
                 }
 
@@ -232,8 +254,20 @@
                 const btn = document.querySelector('#departmentChoicesForm button[type="submit"]');
                 const allEmpty = Array.from(document.querySelectorAll('.departmentChoices'))
                     .every(el => el.value === '');
-                btn.disabled = allEmpty;
-                btn.textContent = allEmpty ? '請至少選擇一個志願方可點擊「送出」按鈕' : '確定送出報名意願和志願選擇';
+
+                // 檢查是否已過期
+                const endTime = new Date("<?= parameters['系統關閉時間'] ?>");
+                const now = new Date();
+                const isExpired = now > endTime;
+
+                // 如果已過期或所有志願都是空的，就停用按鈕
+                btn.disabled = allEmpty || isExpired;
+                if (isExpired) {
+                    btn.title = '報名已截止';
+                    btn.textContent = '報名已截止';
+                } else {
+                    btn.textContent = allEmpty ? '請至少選擇一個志願方可點擊「送出」按鈕' : '確定送出報名意願和志願選擇';
+                }
             }
 
             // 將後端傳來的校系志願列表轉換為下拉選單的選項
@@ -276,10 +310,15 @@
             // 插入志願選擇欄位
             function insertDepartmentSelectionFields() {
                 const isJoined = <?= isJoined ?> === 'true';
-                console.log("isJoined 的型態是： %s", typeof (isJoined)); // Debugging line added
+                console.log("isJoined 的型態是： %s", typeof (isJoined));
                 const refInput = document.getElementById('isJoinedInput');
-                const selectedChoices = <?!= JSON.stringify(selectedChoices) ?>; // Debugging line added
+                const selectedChoices = <?!= JSON.stringify(selectedChoices) ?>;
                 const departmentOptions = <?!= JSON.stringify(departmentOptions) ?>;
+
+                // 檢查是否已過期
+                const endTime = new Date("<?= parameters['系統關閉時間'] ?>");
+                const now = new Date();
+                const isExpired = now > endTime;
 
                 for (let i = selectedChoices.length - 1; i >= 0; i--) {
                     // 建立 mb-3 div
@@ -297,6 +336,11 @@
                     select.className = 'form-select form-select-sm departmentChoices fs-5';
                     select.name = `departmentChoices_${i + 1}`;
                     select.id = `departmentChoices_${i + 1}`;
+                    // 如果已過期，直接設定為停用狀態
+                    if (isExpired) {
+                        select.disabled = true;
+                        select.title = '報名已截止';
+                    }
 
                     // 建立預設 option
                     const opt0 = document.createElement('option');
@@ -314,10 +358,18 @@
                 }
 
                 document.getElementById('isJoinedSwitch').checked = isJoined;
+                const isJoinedSwitch = document.getElementById('isJoinedSwitch');
                 document.getElementById('isJoinedLabel').textContent = isJoined ? '我要參加集體報名' : '我「不」參加集體報名';
                 document.getElementById('isJoinedInput').value = isJoined ? '是' : '否';
                 document.getElementById('departmentChoicesCard').style.display = isJoined ? '' : 'none';
                 document.getElementById('isJoinedForm').querySelector('button[type="submit"]').style.display = isJoined ? 'none' : '';
+
+                // 如果已過期，同時停用 switch
+                if (isExpired && isJoinedSwitch) {
+                    isJoinedSwitch.disabled = true;
+                    isJoinedSwitch.title = '報名已截止';
+                }
+
                 updateRegistrationFee();
                 updateDepartmentSubmitBtnState();
             }
