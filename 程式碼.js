@@ -258,8 +258,12 @@ function doPost(e) {
         const endTime = new Date(parameters['系統關閉時間']);
         const now = new Date();
 
-        if (now > endTime) {
-            Logger.log('doPost 已過截止時間，不更新資料');
+        const timeDiff = now - endTime;
+        const tolerance = 60000; // 1 分鐘的容忍時間
+        if (timeDiff > tolerance) {
+            Logger.log('現在時間：%s', now);
+            Logger.log('截止時間：%s', endTime);
+            Logger.log('doPost 已過截止時間 1 分鐘，不再更新資料！');
             return ContentService.createTextOutput('志願調查已結束');
         }
 
