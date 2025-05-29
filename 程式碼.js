@@ -4,6 +4,7 @@ const examDataSheet = ss.getSheetByName('統測報名資料');
 const choicesSheet = ss.getSheetByName('志願選項');
 const studentChoiceSheet = ss.getSheetByName('考生志願列表');
 const limitOfSchoolsheet = ss.getSheetByName('可報名之系科組學程數');
+const forImportSheet = ss.getSheetByName('匯入報名系統');
 const limitsOfChoices = 6; // 最多可填的志願數量
 
 // 快取相關常數
@@ -116,7 +117,7 @@ function getCacheData(key) {
 function onOpen() {
     SpreadsheetApp.getUi()
         .createMenu('志願調查系統')
-        .addItem('開啟表單', 'startForm')
+        .addItem('匯出報名用CSV', 'exportCsv')
         .addToUi();
 }
 
@@ -441,4 +442,81 @@ function doPost(e) {
             '系統錯誤，請稍後再試。<br><pre>' + err.message + '</pre>'
         );
     }
+}
+
+function exportCsv() {
+    const parameters = getParameters();
+    const now = new Date();
+    const nowString = Utilities.formatDate(
+        now,
+        'Asia/Taipei',
+        'yyyy-MM-dd_HHmm'
+    );
+
+    const [headers, ...data] = forImportSheet.getDataRange().getValues();
+
+    // 將所有資料轉換成文字格式，並過濾掉完全空白的列
+    const processedData = data
+        .filter((row) =>
+            row.some(
+                (cell) =>
+                    cell !== null &&
+                    cell !== undefined &&
+                    cell.toString().trim() !== ''
+            )
+        )
+        .map((row) =>
+            row.map((cell) => {
+                // 如果是空值，回傳空字串
+                if (cell === null || cell === undefined) return '';
+                // 將所有值轉換成字串
+                return String(cell);
+            })
+        );
+
+    // 如果沒有有效的資料列，顯示錯誤訊息
+    if (processedData.length === 0) {
+        const ui = SpreadsheetApp.getUi();
+        ui.alert('錯誤', '沒有可匯出的資料，請確認資料內容。', ui.ButtonSet.OK);
+        return null;
+    }
+
+    const csvContent = [
+        headers.map(String).join(','),
+        ...processedData.map((row) => row.join(',')),
+    ].join('\n');
+
+    // 取得試算表所在的資料夾
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const spreadsheetId = spreadsheet.getId();
+    const spreadsheetFile = DriveApp.getFileById(spreadsheetId);
+    const parentFolder = spreadsheetFile.getParents().hasNext()
+        ? spreadsheetFile.getParents().next()
+        : DriveApp.getRootFolder();
+
+    // 在相同資料夾中建立 CSV 檔案
+    const fileName =
+        parameters['報名學校代碼'] + 'StudQuota_' + nowString + '.csv';
+    const blob = Utilities.newBlob(csvContent, 'text/csv', fileName);
+    const file = parentFolder.createFile(blob);
+
+    // 取得下載連結
+    const fileUrl = file.getDownloadUrl();
+    Logger.log('CSV 檔案已建立在與試算表相同的資料夾中：%s', fileUrl);
+
+    const ui = SpreadsheetApp.getUi();
+    const htmlOutput = HtmlService.createHtmlOutput(
+        `
+            <div style="padding: 10px; font-family: Arial, sans-serif;">
+                <p>CSV 檔案已建立完成！</p>
+                <p><a href="${fileUrl}" target="_blank" download>點此下載檔案</a></p>
+                <p style="color: #666; font-size: 0.9em;">檔案已儲存在與試算表相同的資料夾中</p>
+            </div>
+        `
+    )
+        .setWidth(300)
+        .setHeight(150);
+
+    ui.showModalDialog(htmlOutput, '檔案匯出完成');
+    return fileUrl;
 }
