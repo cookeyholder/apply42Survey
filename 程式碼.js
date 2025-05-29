@@ -6,6 +6,110 @@ const studentChoiceSheet = ss.getSheetByName('考生志願列表');
 const limitOfSchoolsheet = ss.getSheetByName('可報名之系科組學程數');
 const limitsOfChoices = 6; // 最多可填的志願數量
 
+// 快取相關常數
+const CACHE_EXPIRATION = 21600; // 快取時效 6 小時
+const CACHE_KEYS = {
+    LIMIT_OF_SCHOOLS: 'limitOfSchools',
+    DEPARTMENT_OPTIONS: 'departmentOptions',
+    EXAM_DATA: 'examData',
+    CHOICES_DATA: 'choicesData',
+};
+
+/**
+ * @description 將大型資料分段儲存到快取
+ * @param {string} key - 快取鍵值
+ * @param {Object} data - 要存入的資料
+ */
+function setChunkedCacheData(key, data) {
+    const cache = CacheService.getScriptCache();
+    const str = JSON.stringify(data);
+
+    // 將資料分段，每段約 90KB
+    const chunkSize = 90000;
+    const chunks = [];
+    for (let i = 0; i < str.length; i += chunkSize) {
+        chunks.push(str.slice(i, i + chunkSize));
+    }
+
+    // 儲存分段數量
+    const cacheObj = {};
+    cacheObj[`${key}_chunks`] = chunks.length;
+
+    // 儲存每個分段
+    chunks.forEach((chunk, i) => {
+        cacheObj[`${key}_${i}`] = chunk;
+    });
+
+    cache.putAll(cacheObj, CACHE_EXPIRATION);
+}
+
+/**
+ * @description 從快取中讀取分段資料並組合
+ * @param {string} key - 快取鍵值
+ * @returns {Object|null} 快取資料或 null
+ */
+function getChunkedCacheData(key) {
+    const cache = CacheService.getScriptCache();
+    const numChunks = Number(cache.get(`${key}_chunks`));
+
+    if (!numChunks) {
+        return null;
+    }
+
+    // 讀取所有分段
+    const keys = Array.from({ length: numChunks }, (_, i) => `${key}_${i}`);
+    const chunks = cache.getAll(keys);
+
+    if (!chunks || Object.keys(chunks).length === 0) {
+        return null;
+    }
+
+    // 組合所有分段
+    const jsonStr = Array.from(
+        { length: numChunks },
+        (_, i) => chunks[`${key}_${i}`]
+    ).join('');
+
+    try {
+        return JSON.parse(jsonStr);
+    } catch (e) {
+        Logger.log('快取資料解析錯誤：%s', e.message);
+        return null;
+    }
+}
+
+/**
+ * @description 設定快取資料（自動判斷是否需要分段）
+ * @param {string} key - 快取鍵值
+ * @param {Object} data - 要存入的資料
+ */
+function setCacheData(key, data) {
+    const str = JSON.stringify(data);
+    if (str.length > 90000) {
+        setChunkedCacheData(key, data);
+    } else {
+        const cache = CacheService.getScriptCache();
+        cache.put(key, str, CACHE_EXPIRATION);
+    }
+}
+
+/**
+ * @description 取得快取資料（自動判斷是否為分段資料）
+ * @param {string} key - 快取鍵值
+ * @returns {Object|null} 快取資料或 null
+ */
+function getCacheData(key) {
+    const cache = CacheService.getScriptCache();
+    const chunksCount = cache.get(`${key}_chunks`);
+
+    if (chunksCount) {
+        return getChunkedCacheData(key);
+    }
+
+    const data = cache.get(key);
+    return data ? JSON.parse(data) : null;
+}
+
 /**
  * @description 建立自訂功能表「志願調查系統」
  */
@@ -140,8 +244,6 @@ function findValueRow(targetRange, keyword) {
  * @returns {Object<string, any>|null} 使用者資料或 null
  */
 function getUserData() {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const examDataSheet = ss.getSheetByName('統測報名資料');
     if (!examDataSheet) {
         Logger.log('考生報名資料表不存在');
         return null;
@@ -152,37 +254,51 @@ function getUserData() {
         return null;
     }
 
-    const headers = examDataSheet
-        .getRange(1, 1, 1, examDataSheet.getLastColumn())
-        .getValues()[0];
+    // 檢查快取中的考生資料
+    const cachedExamData = getCacheData(CACHE_KEYS.EXAM_DATA);
+    let examData;
 
-    const userData = examDataSheet
-        .getRange(findValueRow(examDataSheet, loginEmail), 1, 1, headers.length)
-        .getValues()[0];
+    if (cachedExamData) {
+        examData = cachedExamData;
+    } else {
+        examData = {
+            headers: examDataSheet
+                .getRange(1, 1, 1, examDataSheet.getLastColumn())
+                .getValues()[0],
+            data: examDataSheet.getDataRange().getValues().slice(1),
+        };
+        setCacheData(CACHE_KEYS.EXAM_DATA, examData);
+    }
 
-    const studentIdIndex = headers.indexOf('學號');
-    const classIndex = headers.indexOf('班級名稱');
-    const studentNameIndex = headers.indexOf('考生姓名');
-    const groupIndex = headers.indexOf('報考群(類)名稱');
+    const { headers, data } = examData;
 
-    if (
-        classIndex < 0 ||
-        studentNameIndex < 0 ||
-        groupIndex < 0 ||
-        studentIdIndex < 0
-    ) {
-        Logger.log('Header not found');
+    // 尋找使用者資料
+    const userRow = data.find(
+        (row) => row[headers.indexOf('信箱')] === loginEmail
+    );
+
+    if (!userRow) {
         return null;
     }
 
-    if (userData) {
-        const user = headers.reduce((acc, key, idx) => {
-            acc[key] = userData[idx];
-            return acc;
-        }, {});
-        Logger.log('getUserData() 取得使用者資料：%s', JSON.stringify(user));
-        return user;
+    // 檢查必要欄位
+    const requiredFields = ['學號', '班級名稱', '考生姓名', '報考群(類)名稱'];
+    const missingFields = requiredFields.filter(
+        (field) => headers.indexOf(field) === -1
+    );
+
+    if (missingFields.length > 0) {
+        Logger.log('缺少必要欄位：' + missingFields.join(', '));
+        return null;
     }
+
+    const user = headers.reduce((acc, key, idx) => {
+        acc[key] = userRow[idx];
+        return acc;
+    }, {});
+
+    Logger.log('getUserData() 取得使用者資料：%s', JSON.stringify(user));
+    return user;
 }
 
 /**
@@ -194,36 +310,53 @@ function getOptionData(user = null) {
     if (!user) {
         user = getUserData();
     }
-    const headers = choicesSheet
-        .getRange(1, 1, 1, choicesSheet.getLastColumn())
-        .getValues()[0];
+
+    // 取得志願選項資料（使用快取）
+    let choicesData = getCacheData(CACHE_KEYS.CHOICES_DATA);
+    if (!choicesData) {
+        choicesData = {
+            headers: choicesSheet
+                .getRange(1, 1, 1, choicesSheet.getLastColumn())
+                .getValues()[0],
+            data: choicesSheet
+                .getRange(
+                    2,
+                    1,
+                    choicesSheet.getLastRow() - 1,
+                    choicesSheet.getLastColumn()
+                )
+                .getValues(),
+        };
+        setCacheData(CACHE_KEYS.CHOICES_DATA, choicesData);
+    }
 
     const groupIndex =
-        headers.indexOf(
+        choicesData.headers.indexOf(
             user['報考群(類)代碼'].padStart(2, '0') + user['報考群(類)名稱']
         ) + 1;
 
-    const startColumn =
-        studentChoiceSheet
-            .getRange(1, 1, 1, studentChoiceSheet.getLastColumn())
-            .getValues()[0]
-            .indexOf('是否參加集體報名') + 1;
-
-    let [isJoined, ...selectedChoices] = studentChoiceSheet
+    // 取得學生選擇（不使用快取，因為這是會變動的資料）
+    const studentData = studentChoiceSheet
         .getRange(
-            findValueRow(studentChoiceSheet, user['信箱']),
-            startColumn,
             1,
-            limitsOfChoices + 1
+            1,
+            studentChoiceSheet.getLastRow(),
+            studentChoiceSheet.getLastColumn()
         )
-        .getValues()[0];
-    isJoined = isJoined.toString() === '是' ? true : false;
+        .getValues();
+    const startColumn = studentData[0].indexOf('是否參加集體報名');
+    const studentRow =
+        studentData[findValueRow(studentChoiceSheet, user['信箱']) - 1] || [];
 
-    const departmentOptions = choicesSheet
-        .getRange(2, groupIndex, choicesSheet.getLastRow(), 1)
-        .getValues()
-        .map((row) => row[0])
-        .filter((item) => item.toString().trim() !== '');
+    const isJoined = studentRow[startColumn]?.toString() === '是';
+    const selectedChoices =
+        studentRow.slice(startColumn + 1, startColumn + limitsOfChoices + 1) ||
+        Array(limitsOfChoices).fill('');
+
+    // 取得科系選項
+    const departmentOptions = choicesData.data
+        .map((row) => row[groupIndex - 1])
+        .filter((item) => item?.toString().trim() !== '');
 
     Logger.log(
         'getOptionData() 返回的資料：%s',
@@ -234,6 +367,11 @@ function getOptionData(user = null) {
 }
 
 function getLimitOfSchools() {
+    const cachedData = getCacheData(CACHE_KEYS.LIMIT_OF_SCHOOLS);
+    if (cachedData) {
+        return cachedData;
+    }
+
     const [headers, ...data] = limitOfSchoolsheet.getDataRange().getValues();
     const limits = data
         .filter((row) => row.length > 0 && row[0] !== '')
@@ -242,6 +380,7 @@ function getLimitOfSchools() {
             return acc;
         }, {});
 
+    setCacheData(CACHE_KEYS.LIMIT_OF_SCHOOLS, limits);
     Logger.log(
         'getLimitOfSchools() 返回的限制資料：%s',
         JSON.stringify(limits)

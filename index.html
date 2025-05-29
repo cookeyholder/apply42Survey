@@ -4,13 +4,17 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="四技二專甄選入學志願調查系統" />
         <base target="_top" />
+        <title>四技二專甄選入學志願調查系統</title>
+        <link rel="preload"
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css"
+            as="style" />
         <link
             href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css"
             rel="stylesheet"
             integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU"
             crossorigin="anonymous" />
-        <title>四技二專甄選入學志願調查系統</title>
         <style>
             .navbar-brand {
                 font-size: 1.5rem;
@@ -84,11 +88,11 @@
                     <!-- <h5 class="card-title text-center">說明</h5> -->
                     <div class="row mt-3">
                         <div class="col-12">
-                            <p>說明及注意事項：</p>
+                            <p>說明及注意事項：<span id="countdownTimer"></span></p>
                             <ol>
-                                <li>這是<strong>正式的集體報名調查！</strong>不是練習用的，請審慎思考後於
+                                <li>這是<strong>正式的集體報名調查！</strong>請審慎思考後於
                                     <strong><span id=endTimeBox></span></strong>
-                                    前送出您的志願。<span id="countdownTimer"></span>
+                                    前送出您的志願。若想要更改志願，也請於截止時間前重新填表送出。
                                 </li>
                                 <li>集體報名志願調查截止後便不再接受任何更改，若您還是想更改，請自行個別報名！但請先通知註冊組您要個別報名，否則若集體報名和個別報名都有報名，將以集體報名的資料為準。<a
                                         href="https://ent22.jctv.ntut.edu.tw/ugs1join/login.zul">(請點此進入個別報名系統)</a>
@@ -192,9 +196,11 @@
                 }
 
                 if (hours > 0) {
-                    countdownTimer.innerHTML = `距離截止時間還有 <strong class="text-danger">${hours} 小時 ${minutes} 分鐘 ${seconds} 秒</strong>。`;
+                    countdownTimer.innerHTML = `<strong class="text-danger">距離截止時間還有 ${hours} 小時 ${minutes} 分鐘 ${seconds} 秒</strong>`;
+                } else if (minutes > 0) {
+                    countdownTimer.innerHTML = `<strong class="text-danger">距離截止時間還有 ${minutes} 分鐘 ${seconds} 秒</strong>`;
                 } else {
-                    countdownTimer.innerHTML = `距離截止時間還有 <strong class="text-danger">${minutes} 分鐘 ${seconds} 秒</strong>。`;
+                    countdownTimer.innerHTML = `<strong class="text-danger">距離截止時間還有 ${seconds} 秒</strong>`;
                 }
             }
             const timerInterval = setInterval(updateCountdown, 1000);
@@ -266,7 +272,7 @@
                     btn.title = '報名已截止';
                     btn.textContent = '報名已截止';
                 } else {
-                    btn.textContent = allEmpty ? '請至少選擇一個志願方可點擊「送出」按鈕' : '確定送出報名意願和志願選擇';
+                    btn.textContent = allEmpty ? '請至少選擇一個志願' : '確定送出報名意願和志願選擇';
                 }
             }
 
@@ -310,7 +316,6 @@
             // 插入志願選擇欄位
             function insertDepartmentSelectionFields() {
                 const isJoined = <?= isJoined ?> === 'true';
-                console.log("isJoined 的型態是： %s", typeof (isJoined));
                 const refInput = document.getElementById('isJoinedInput');
                 const selectedChoices = <?!= JSON.stringify(selectedChoices) ?>;
                 const departmentOptions = <?!= JSON.stringify(departmentOptions) ?>;
