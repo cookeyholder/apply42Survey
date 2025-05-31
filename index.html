@@ -162,7 +162,9 @@
                 const seconds = padZero(Math.floor((timeLeft / 1000) % 60));
                 const minutes = padZero(Math.floor((timeLeft / 1000 / 60) % 60));
                 const hours = Math.floor(timeLeft / 1000 / 60 / 60);
-                endTimeBox.innerHTML = formatDateTime(endTime);
+                if (endTimeBox) {
+                    endTimeBox.innerHTML = formatDateTime(endTime);
+                }
 
                 if (timeLeft < 0) {
                     countdownTimer.innerHTML = "<span id='countdownTimer' class='text-danger'><strong>報名已截止囉！</strong></span>";
@@ -209,7 +211,9 @@
                 const dd = padZero(date.getDate());         // 日
                 const hh = padZero(date.getHours());        // 時
                 const MM = padZero(date.getMinutes());      // 分
-                return `${yyyy} 年 ${mm} 月 ${dd} 日 ${hh} 時 ${MM} 分`;
+                const weekDay = ['日', '一', '二', '三', '四', '五', '六'][date.getDay()];  // 星期幾
+
+                return `${yyyy} 年 ${mm} 月 ${dd} 日(星期${weekDay}) ${hh} 時 ${MM} 分`;
             }
 
             document.addEventListener('DOMContentLoaded', function () {
