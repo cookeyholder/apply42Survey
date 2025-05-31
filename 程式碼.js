@@ -454,7 +454,7 @@ function doPost(e) {
             updateSpecificRow(row, [joinedParam, ...departmentChoices]);
         }
 
-        const template = HtmlService.createTemplateFromFile('output');
+        const template = HtmlService.createTemplateFromFile('success');
         template.loginEmail = Session.getActiveUser().getEmail();
         template.serviceUrl = getServiceUrl();
         template.user = user;
