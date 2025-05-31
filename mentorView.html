@@ -132,6 +132,12 @@
                             <div><?= data.length ?></div>
                         </div>
                         <div class="col-12 col-sm-6 col-md mb-3">
+                            <div class="text-muted">填答人數</div>
+                            <div>
+                                <?= data.filter((row) => {const isJoinedIndex = headers.indexOf('是否參加集體報名'); return row[isJoinedIndex] !== ''}).length ?>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md mb-3">
                             <div class="text-muted">參加集報人數</div>
                             <div>
                                 <?= data.filter((row) => {const isJoinedIndex = headers.indexOf('是否參加集體報名'); return row[isJoinedIndex] === '是'}).length ?>
@@ -277,7 +283,7 @@
             }
 
             const timerInterval = setInterval(updateCountdown, 1000);
-            updateCountdown(); // 立即執行一次，避免等待第一次計時器觸發
+            updateCountdown();
         </script>
     </body>
 
