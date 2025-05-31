@@ -226,15 +226,12 @@
                                     <small class="text-muted">
                                         (${row[groupIndex] || ''} / ${row[paymentTypeIndex] || ''} ${row[isJoinedIndex] === '是' ? `/ ${row[feeIndex]} 元` : ''})
                                     </small>
-                                    <span class="badge ${row[isJoinedIndex] === '是' ? 'bg-success' : 'bg-danger'} float-end">
-                                        ${row[isJoinedIndex] === '是' ? '參加集體報名' : '不參加集體報名'}
-                                    </span>
                                 </div>
                                 <div class="student-card-body">
                                     <div class="student-info">
-                                        ${row[isJoinedIndex] !== '是' ?
-                                '<div class="alert alert-warning mb-0">此學生不參加集體報名</div>' :
-                                (wishesHtml || '<div class="alert alert-info mb-0">尚未選擇志願</div>')}
+                                        ${row[isJoinedIndex] === '否' ?
+                                '<div class="alert alert-danger mb-0">此學生不參加集體報名</div>' :
+                                (wishesHtml ? '<div class="alert alert-success mb-0">' + wishesHtml + '</div>' : '<div class="alert alert-warning mb-0">此學生尚未填寫志願</div>')}
                                     </div>
                                 </div>
                             </div>
