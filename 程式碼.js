@@ -7,6 +7,16 @@ const limitOfSchoolsheet = ss.getSheetByName('可報名之系科組學程數');
 const forImportSheet = ss.getSheetByName('匯入報名系統');
 const limitsOfChoices = 6; // 最多可填的志願數量
 
+/**
+ * @description 建立自訂功能表「志願調查系統」
+ */
+function onOpen() {
+    SpreadsheetApp.getUi()
+        .createMenu('志願調查系統')
+        .addItem('匯出報名用CSV', 'exportCsv')
+        .addToUi();
+}
+
 // 快取相關常數
 const CACHE_EXPIRATION = 21600; // 快取時效 6 小時
 const CACHE_KEYS = {
@@ -109,16 +119,6 @@ function getCacheData(key) {
 
     const data = cache.get(key);
     return data ? JSON.parse(data) : null;
-}
-
-/**
- * @description 建立自訂功能表「志願調查系統」
- */
-function onOpen() {
-    SpreadsheetApp.getUi()
-        .createMenu('志願調查系統')
-        .addItem('匯出報名用CSV', 'exportCsv')
-        .addToUi();
 }
 
 /**
