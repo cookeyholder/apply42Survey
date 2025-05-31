@@ -5,6 +5,7 @@ const choicesSheet = ss.getSheetByName('志願選項');
 const studentChoiceSheet = ss.getSheetByName('考生志願列表');
 const limitOfSchoolsheet = ss.getSheetByName('可報名之系科組學程數');
 const forImportSheet = ss.getSheetByName('匯入報名系統');
+const mentorSheet = ss.getSheetByName('導師名單');
 const limitsOfChoices = 6; // 最多可填的志願數量
 
 /**
@@ -133,11 +134,16 @@ function doGet(e) {
         Logger.log('doGet 取得的使用者資料：%s', JSON.stringify(user));
         const parameters = getParameters();
         Logger.log('doGet 取得的系統設定資訊：%s', JSON.stringify(parameters));
+
+        // 如果使用者未登入或登入的不在允許名單之中
         if (!user) {
             return HtmlService.createHtmlOutput(
                 '請先登入學校的信箱帳號，並使用 Chrome 瀏覽器。'
             );
-        } else {
+        }
+
+        // 如果使用者資料中有「統一入學測驗報名序號」，則表示他是學生
+        if (user['統一入學測驗報名序號']) {
             const template = HtmlService.createTemplateFromFile('index');
             template.loginEmail = Session.getActiveUser().getEmail();
             template.serviceUrl = getServiceUrl();
@@ -149,6 +155,19 @@ function doGet(e) {
             template.selectedChoices = getOptionData(user).selectedChoices;
             template.departmentOptions = getOptionData(user).departmentOptions;
             return template.evaluate().setTitle('四技二專甄選入學志願調查系統');
+        }
+
+        // 如果使用者資料中沒有「統一入學測驗報名序號」，則表示他是導師
+        if (!user['統一入學測驗報名序號']) {
+            const { headers, data } = getTraineesDepartmentChoices(user);
+            const template = HtmlService.createTemplateFromFile('mentorView');
+            template.loginEmail = Session.getActiveUser().getEmail();
+            template.serviceUrl = getServiceUrl();
+            template.user = user;
+            template.parameters = parameters;
+            template.headers = headers;
+            template.data = data;
+            return template.evaluate().setTitle('導師查詢班級學生志願');
         }
     } catch (err) {
         Logger.log('doGet 發生錯誤：%s\n%s', err.message, err.stack);
@@ -177,6 +196,67 @@ function getParameters() {
         acc[key] = value;
         return acc;
     }, {});
+}
+
+/**
+ * @description 依目前登入電子郵件從統測報名資料取得使用者資料
+ * @returns {Object<string, any>|null} 使用者資料或 null
+ */
+function getUserData() {
+    if (!examDataSheet || !mentorSheet) {
+        Logger.log('統測報名資料或導師名單不存在');
+        return null;
+    }
+    const loginEmail = Session.getActiveUser().getEmail();
+    if (!loginEmail) {
+        Logger.log('User not logged in');
+        return null;
+    }
+
+    // 檢查快取中的考生資料
+    const cachedExamData = getCacheData(CACHE_KEYS.EXAM_DATA);
+    if (findValueRow(examDataSheet, loginEmail)) {
+        examData = {
+            headers: examDataSheet
+                .getRange(1, 1, 1, examDataSheet.getLastColumn())
+                .getValues()[0],
+            data: examDataSheet.getDataRange().getValues().slice(1),
+        };
+    } else if (findValueRow(mentorSheet, loginEmail)) {
+        examData = {
+            headers: mentorSheet
+                .getRange(1, 1, 1, mentorSheet.getLastColumn())
+                .getValues()[0],
+            data: mentorSheet.getDataRange().getValues().slice(1),
+        };
+    } else {
+        examData = { headers: [], data: [] };
+    }
+
+    if (!cachedExamData) {
+        setCacheData(CACHE_KEYS.EXAM_DATA, examData);
+    }
+
+    const { headers, data } = examData;
+    Logger.log('Headers: %s', headers);
+    Logger.log('Data: %s', data);
+
+    // 尋找使用者資料
+    const userRow = data.filter((row) => row[0].toString() === loginEmail)[0];
+    Logger.log('userRow: %s', userRow);
+
+    if (!userRow) {
+        Logger.log('找不到使用者資料，信箱：%s', loginEmail);
+        return null;
+    }
+
+    const user = headers.reduce((acc, key, idx) => {
+        acc[key] = userRow[idx];
+        return acc;
+    }, {});
+
+    Logger.log('getUserData() 取得使用者資料：%s', JSON.stringify(user));
+    return user;
 }
 
 function getNotifications(parameters) {
@@ -249,75 +329,22 @@ function findValueRow(targetRange, keyword) {
         .matchCase(false)
         .findNext();
 
-    Logger.log(
-        '在 %s 工作表的第 %s 列找到關鍵字: %s',
-        sheet.getName(),
-        foundCell ? foundCell.getRow() : 0,
-        keyword
-    );
-    return foundCell ? foundCell.getRow() : 0; // 有找到傳回 row number，否則傳回 0
-}
-
-/**
- * @description 依目前登入電子郵件從統測報名資料取得使用者資料
- * @returns {Object<string, any>|null} 使用者資料或 null
- */
-function getUserData() {
-    if (!examDataSheet) {
-        Logger.log('考生報名資料表不存在');
-        return null;
-    }
-    const loginEmail = Session.getActiveUser().getEmail();
-    if (!loginEmail) {
-        Logger.log('User not logged in');
-        return null;
-    }
-
-    // 檢查快取中的考生資料
-    const cachedExamData = getCacheData(CACHE_KEYS.EXAM_DATA);
-    let examData;
-
-    if (cachedExamData) {
-        examData = cachedExamData;
+    if (foundCell) {
+        Logger.log(
+            '在 %s 工作表的第 %s 列找到關鍵字: %s',
+            sheet.getName(),
+            foundCell.getRow(),
+            keyword
+        );
     } else {
-        examData = {
-            headers: examDataSheet
-                .getRange(1, 1, 1, examDataSheet.getLastColumn())
-                .getValues()[0],
-            data: examDataSheet.getDataRange().getValues().slice(1),
-        };
-        setCacheData(CACHE_KEYS.EXAM_DATA, examData);
+        Logger.log(
+            '在 %s 工作表中，沒有找到關鍵字： %s',
+            sheet.getName(),
+            keyword
+        );
     }
 
-    const { headers, data } = examData;
-
-    // 尋找使用者資料
-    const userRow = data.find(
-        (row) => row[headers.indexOf('信箱')] === loginEmail
-    );
-
-    if (!userRow) {
-        return null;
-    }
-
-    // 檢查必要欄位
-    const requiredFields = ['學號', '班級名稱', '考生姓名', '報考群(類)名稱'];
-    const missingFields = requiredFields.filter(
-        (field) => headers.indexOf(field) === -1
-    );
-
-    if (missingFields.length > 0) {
-        Logger.log('缺少必要欄位：' + missingFields.join(', '));
-        return null;
-    }
-
-    const user = headers.reduce((acc, key, idx) => {
-        acc[key] = userRow[idx];
-        return acc;
-    }, {});
-
-    Logger.log('getUserData() 取得使用者資料：%s', JSON.stringify(user));
-    return user;
+    return foundCell ? foundCell.getRow() : 0; // 有找到傳回 row number，否則傳回 0
 }
 
 /**
