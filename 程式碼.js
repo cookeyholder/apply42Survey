@@ -131,16 +131,19 @@ function doGet(e) {
         Logger.log('doGet 請求參數：%s', JSON.stringify(e.parameters));
         const user = getUserData();
         Logger.log('doGet 取得的使用者資料：%s', JSON.stringify(user));
+        const parameters = getParameters();
+        Logger.log('doGet 取得的系統設定資訊：%s', JSON.stringify(parameters));
         if (!user) {
             return HtmlService.createHtmlOutput(
                 '請先登入學校的信箱帳號，並使用 Chrome 瀏覽器。'
             );
         } else {
             const template = HtmlService.createTemplateFromFile('index');
-            template.parameters = getParameters();
-            template.serviceUrl = getServiceUrl();
             template.loginEmail = Session.getActiveUser().getEmail();
+            template.serviceUrl = getServiceUrl();
             template.user = user;
+            template.parameters = parameters;
+            template.notifications = getNotifications(parameters);
             template.limitOfSchools = getLimitOfSchools();
             template.isJoined = getOptionData(user).isJoined;
             template.selectedChoices = getOptionData(user).selectedChoices;
@@ -174,6 +177,21 @@ function getParameters() {
         acc[key] = value;
         return acc;
     }, {});
+}
+
+function getNotifications(parameters) {
+    const notifications = [];
+    const descriptionKeys = Object.keys(parameters).filter((key) =>
+        key.startsWith('說明')
+    );
+    descriptionKeys.forEach((key) => {
+        const description = parameters[key];
+        if (description) {
+            notifications.push(`<li>${description}</li>`);
+        }
+    });
+
+    return notifications.join('');
 }
 
 /**
@@ -394,6 +412,7 @@ function doPost(e) {
         Logger.log('doPost 請求參數：%s', JSON.stringify(e.parameters));
 
         // 檢查是否已過截止時間
+        const user = getUserData();
         const parameters = getParameters();
         const endTime = new Date(parameters['系統關閉時間']);
         const now = new Date();
@@ -436,11 +455,11 @@ function doPost(e) {
         }
 
         const template = HtmlService.createTemplateFromFile('output');
-        const user = getUserData();
-        template.parameters = getParameters();
-        template.serviceUrl = getServiceUrl();
         template.loginEmail = Session.getActiveUser().getEmail();
+        template.serviceUrl = getServiceUrl();
         template.user = user;
+        template.parameters = parameters;
+        template.notifications = getNotifications(parameters);
         template.limitOfSchools = getLimitOfSchools();
         template.isJoined = getOptionData(user).isJoined;
         template.selectedChoices = getOptionData(user).selectedChoices;
