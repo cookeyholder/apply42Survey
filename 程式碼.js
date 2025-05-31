@@ -435,7 +435,18 @@ function doPost(e) {
             updateSpecificRow(row, [joinedParam, ...departmentChoices]);
         }
 
-        return ContentService.createTextOutput('成功更新志願選擇資料。');
+        const template = HtmlService.createTemplateFromFile('output');
+        const user = getUserData();
+        template.parameters = getParameters();
+        template.serviceUrl = getServiceUrl();
+        template.loginEmail = Session.getActiveUser().getEmail();
+        template.user = user;
+        template.limitOfSchools = getLimitOfSchools();
+        template.isJoined = getOptionData(user).isJoined;
+        template.selectedChoices = getOptionData(user).selectedChoices;
+        template.departmentOptions = getOptionData(user).departmentOptions;
+
+        return template.evaluate().setTitle('四技二專甄選入學志願調查系統');
     } catch (err) {
         Logger.log('doPost 發生錯誤：%s\n%s', err.message, err.stack);
         return ContentService.createTextOutput(
