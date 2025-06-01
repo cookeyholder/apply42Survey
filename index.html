@@ -238,39 +238,59 @@
                     updateDepartmentSubmitBtnState();
                 });
 
-                // 選擇欄位變更監聽
-                document.addEventListener('change', function (e) {
-                    if (e.target.matches('.departmentChoices')) {
-                        checkDuplicateChoices(e.target);
-                        checkIfOverLimit(e.target);
-                        updateRegistrationFee();
-                        updateDepartmentSubmitBtnState();
-                    }
-                });
-
                 // 計算報名費用
                 updateRegistrationFee();
                 updateDepartmentSubmitBtnState();
             });
 
+            // 使用事件委託來監聽動態建立的下拉選單
+            document.addEventListener('change', function (e) {
+                if (e.target.matches('.departmentChoices')) {
+                    checkDuplicateChoices(e.target);
+                    checkIfOverLimit(e.target);
+                    updateRegistrationFee();
+                    updateDepartmentSubmitBtnState();
+                }
+            });
+
             // 建立檢查函式：所有 .departmentChoices 都為空時停用送出按鈕
             function updateDepartmentSubmitBtnState() {
                 const btn = document.querySelector('#departmentChoicesForm button[type="submit"]');
+                if (!btn) return; // 如果找不到按鈕就直接返回
+
                 const allEmpty = Array.from(document.querySelectorAll('.departmentChoices'))
-                    .every(el => el.value === '');
+                    .every(el => el.value === '' || el.value === '0');
 
                 // 檢查是否已過期
                 const endTime = new Date("<?= parameters['系統關閉時間'] ?>");
                 const now = new Date();
                 const isExpired = now > endTime;
 
-                // 如果已過期或所有志願都是空的，就停用按鈕
-                btn.disabled = allEmpty || isExpired;
+                // 檢查是否參加集體報名
+                const isJoined = document.getElementById('isJoinedSwitch').checked;
+
+                // 如果已過期，停用按鈕
                 if (isExpired) {
+                    btn.disabled = true;
                     btn.title = '報名已截止';
                     btn.textContent = '報名已截止';
+                    return;
+                }
+
+                // 如果不參加集體報名，不需要檢查志願選擇
+                if (!isJoined) {
+                    btn.disabled = false;
+                    btn.textContent = '確定送出報名意願和志願選擇';
+                    return;
+                }
+
+                // 參加集體報名時，檢查是否有選擇志願
+                if (allEmpty) {
+                    btn.disabled = true;
+                    btn.textContent = '請至少選擇一個志願';
                 } else {
-                    btn.textContent = allEmpty ? '請至少選擇一個志願' : '確定送出報名意願和志願選擇';
+                    btn.disabled = false;
+                    btn.textContent = '確定送出報名意願和志願選擇';
                 }
             }
 
@@ -409,12 +429,6 @@
             document.getElementById('isJoinedSwitch').addEventListener('change', function () {
                 updateRegistrationFee();
             });
-            // 當志願選擇改變時更新報名費用
-            document.addEventListener('change', function (e) {
-                if (e.target.matches('.departmentChoices')) {
-                    updateRegistrationFee();
-                }
-            });
 
             // 提交表單前檢查：若參加集體報名且無任何志願，阻止送出
             document.getElementById('departmentChoicesForm')
@@ -448,6 +462,15 @@
             // 檢查是否超過學校可報志願數，若超過則重設選擇並提示
             function checkIfOverLimit(changedEl) {
                 const limitOfSchools = <?!= JSON.stringify(limitOfSchools) ?>;
+
+                // 除錯：檢查 limitOfSchools 是否為空
+                console.log('limitOfSchools:', limitOfSchools);
+
+                if (!limitOfSchools || Object.keys(limitOfSchools).length === 0) {
+                    console.log('limitOfSchools 為空或未定義');
+                    return false;
+                }
+
                 const departmentChoices = Array.from(document.querySelectorAll('.departmentChoices'))
                     .map(function (el) {return el.value;})
                     .filter(v => v !== '' && v !== '0'); // 排除未選擇
@@ -455,11 +478,18 @@
                 const counts = {};
 
                 departmentChoices.forEach(choice => {
-                    counts[choice.slice(0, 3)] = (counts[choice.slice(0, 3)] || 0) + 1;
+                    if (choice && choice.length >= 3) {
+                        const schoolCode = choice.slice(0, 3);
+                        counts[schoolCode] = (counts[schoolCode] || 0) + 1;
+                    }
                 });
 
+                console.log('學校統計:', counts);
+
                 for (const schoolCode in counts) {
-                    if (counts[schoolCode] > limitOfSchools[schoolCode].limitsOfSchool) {
+                    console.log(`檢查學校 ${schoolCode}:`, limitOfSchools[schoolCode]);
+
+                    if (limitOfSchools[schoolCode] && counts[schoolCode] > limitOfSchools[schoolCode].limitsOfSchool) {
                         if (changedEl) {
                             changedEl.selectedIndex = 0;
                         }
@@ -476,6 +506,7 @@
                     checkDuplicateChoices(e.target);  // 檢查志願是否重複
                     checkIfOverLimit(e.target);  // 檢查是否超過學校可報志願數
                     updateRegistrationFee();  // 更新報名費金額
+                    updateDepartmentSubmitBtnState();  // 更新送出按鈕狀態
                 }
             });
         </script>

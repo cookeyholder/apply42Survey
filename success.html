@@ -460,6 +460,15 @@
             // 檢查是否超過學校可報志願數，若超過則重設選擇並提示
             function checkIfOverLimit(changedEl) {
                 const limitOfSchools = <?!= JSON.stringify(limitOfSchools) ?>;
+
+                // 除錯：檢查 limitOfSchools 是否為空
+                console.log('limitOfSchools:', limitOfSchools);
+
+                if (!limitOfSchools || Object.keys(limitOfSchools).length === 0) {
+                    console.log('limitOfSchools 為空或未定義');
+                    return false;
+                }
+
                 const departmentChoices = Array.from(document.querySelectorAll('.departmentChoices'))
                     .map(function (el) {return el.value;})
                     .filter(v => v !== '' && v !== '0'); // 排除未選擇
@@ -467,11 +476,18 @@
                 const counts = {};
 
                 departmentChoices.forEach(choice => {
-                    counts[choice.slice(0, 3)] = (counts[choice.slice(0, 3)] || 0) + 1;
+                    if (choice && choice.length >= 3) {
+                        const schoolCode = choice.slice(0, 3);
+                        counts[schoolCode] = (counts[schoolCode] || 0) + 1;
+                    }
                 });
 
+                console.log('學校統計:', counts);
+
                 for (const schoolCode in counts) {
-                    if (counts[schoolCode] > limitOfSchools[schoolCode].limitsOfSchool) {
+                    console.log(`檢查學校 ${schoolCode}:`, limitOfSchools[schoolCode]);
+
+                    if (limitOfSchools[schoolCode] && counts[schoolCode] > limitOfSchools[schoolCode].limitsOfSchool) {
                         if (changedEl) {
                             changedEl.selectedIndex = 0;
                         }
