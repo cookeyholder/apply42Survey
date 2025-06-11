@@ -50,7 +50,7 @@
         <nav class="navbar navbar-expand-lg shadow-sm">
             <div class="container-fluid px-2 px-md-4">
                 <a class="navbar-brand"
-                    href="<?= serviceUrl ?>"><?= parameters["系統名稱"] ?></a>
+                    href="<?= serviceUrl ?>"><?= configs["系統名稱"] ?></a>
             </div>
         </nav>
 
@@ -144,13 +144,13 @@
         </div>
 
         <footer class="text-center py-4 text-muted px-2">
-            © <?= parameters["系統名稱"] ?>
+            © <?= configs["系統名稱"] ?>
         </footer>
 
         <script>
             // 初始化倒數計時器和修改說明文字
             function updateCountdown() {
-                const endTime = new Date("<?= parameters['系統關閉時間'] ?>");
+                const endTime = new Date("<?= configs['系統關閉時間'] ?>");
                 const countdownTimer = document.getElementById("countdownTimer");
                 const endTimeBox = document.getElementById("endTimeBox");
                 const now = new Date();
@@ -262,7 +262,7 @@
                     .every(el => el.value === '' || el.value === '0');
 
                 // 檢查是否已過期
-                const endTime = new Date("<?= parameters['系統關閉時間'] ?>");
+                const endTime = new Date("<?= configs['系統關閉時間'] ?>");
                 const now = new Date();
                 const isExpired = now > endTime;
 
@@ -339,7 +339,7 @@
                 const departmentOptions = <?!= JSON.stringify(departmentOptions) ?>;
 
                 // 檢查是否已過期
-                const endTime = new Date("<?= parameters['系統關閉時間'] ?>");
+                const endTime = new Date("<?= configs['系統關閉時間'] ?>");
                 const now = new Date();
                 const isExpired = now > endTime;
 

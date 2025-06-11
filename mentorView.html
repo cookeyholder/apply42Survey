@@ -110,7 +110,7 @@
         <nav class="navbar navbar-expand-lg shadow-sm">
             <div class="container-fluid px-2 px-md-4">
                 <a class="navbar-brand"
-                    href="<?= serviceUrl ?>"><?= parameters["系統名稱"] ?></a>
+                    href="<?= serviceUrl ?>"><?= configs["系統名稱"] ?></a>
             </div>
         </nav>
 
@@ -162,7 +162,7 @@
         </div>
 
         <footer class="text-center py-4 text-muted px-2">
-            © <?= parameters["系統名稱"] ?>
+            © <?= configs["系統名稱"] ?>
         </footer>
 
         <script>
@@ -254,7 +254,7 @@
             });
 
             function updateCountdown() {
-                const endTime = new Date("<?= parameters['系統關閉時間'] ?>");
+                const endTime = new Date("<?= configs['系統關閉時間'] ?>");
                 const countdownTimer = document.getElementById("countdownTimer");
                 const now = new Date();
                 const timeLeft = endTime - now;
