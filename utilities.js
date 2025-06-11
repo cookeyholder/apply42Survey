@@ -53,12 +53,6 @@ function validateRowUpdate(row, values) {
   return true;
 }
 
-// 此函數原作者為彰化高商李政燁老師，用於尋找符合的文字所在的列號(row number)
-// 此处修改或增加部分如下：
-// (1)變數名稱以切合其用途
-// (2)加上 JSDoc 註解以便於維護和使用
-// (3)增加參數設定工作表的讀取
-// (4)加上 Logger.log() 記錄以利於偵錯
 /**
  * @description 在指定範圍以文字搜尋取得列號（改進版）
  * @param {Range|Sheet} targetRange - 搜尋範圍或工作表
