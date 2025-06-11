@@ -12,6 +12,7 @@ const studentChoiceSheet = ss.getSheetByName("考生志願列表");
 const limitOfSchoolsSheet = ss.getSheetByName("可報名之系科組學程數");
 const forImportSheet = ss.getSheetByName("匯入報名系統");
 const mentorSheet = ss.getSheetByName("導師名單");
+const logSheet = ss.getSheetByName("日誌");
 const limitOfChoices = 6; // 最多可填的志願數量
 
 /**
@@ -278,6 +279,17 @@ function doPost(request) {
     updateSpecificRow(row, updateData);
     Logger.log("成功更新使用者 %s 的志願資料", userEmail);
 
+    record = {
+      isJoined: isJoined,
+      departmentChoices_1: departmentChoices[0],
+      departmentChoices_2: departmentChoices[1],
+      departmentChoices_3: departmentChoices[2],
+      departmentChoices_4: departmentChoices[3],
+      departmentChoices_5: departmentChoices[4],
+      departmentChoices_6: departmentChoices[5],
+    };
+    logAdder(user, record);
+
     // 渲染成功頁面
     return renderSuccessPage(user, configs);
   } catch (err) {
@@ -360,4 +372,31 @@ function setXFrameOptionsSafely(htmlOutput) {
     Logger.log("設定 XFrameOptionsMode 時發生錯誤：%s", error.message);
     return htmlOutput;
   }
+}
+
+function logAdder(user, record) {
+  const departmentOptions = getOptionData(user)["departmentOptions"];
+  const departmentName = (option) => {
+    if (!option || option === "") return "";
+
+    const match = departmentOptions.filter((dept) => dept.startsWith(option));
+    return match.length > 0 ? match[0] : "未知志願";
+  };
+
+  logSheet.appendRow([
+    Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy-MM-dd HH:mm:ss"),
+    user["信箱"],
+    user["班級名稱"],
+    user["學號"],
+    user["考生姓名"],
+    user["統一入學測驗報名序號"],
+    user["報考群(類)名稱"],
+    record["isJoined"] ? "是" : "否",
+    departmentName(record["departmentChoices_1"]),
+    departmentName(record["departmentChoices_2"]),
+    departmentName(record["departmentChoices_3"]),
+    departmentName(record["departmentChoices_4"]),
+    departmentName(record["departmentChoices_5"]),
+    departmentName(record["departmentChoices_6"]),
+  ]);
 }
