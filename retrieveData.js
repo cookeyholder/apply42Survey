@@ -1,3 +1,4 @@
+const cache = CacheService.getScriptCache(); // Add this line to define cache
 // 新增常數用於資料驗證
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REQUIRED_EXAM_HEADERS = [
@@ -127,56 +128,105 @@ function getSheetDataSafely(sheet, requiredHeaders = []) {
 }
 
 /**
+ * @description 取得指定標頭在工作表中的索引（1-based）
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet 工作表物件
+ * @param {string} headerName 標頭名稱
+ * @returns {number} 標頭的欄位索引，如果找不到則回傳 -1
+ */
+function getHeaderIndex(sheet, headerName) {
+  if (!sheet || !headerName) {
+    Logger.log("getHeaderIndex: 無效的參數");
+    return -1;
+  }
+  try {
+    const headers = sheet
+      .getRange(1, 1, 1, sheet.getLastColumn())
+      .getValues()[0];
+    const index = headers.indexOf(headerName);
+    return index !== -1 ? index + 1 : -1; // Apps Script 的欄位索引是 1-based
+  } catch (error) {
+    Logger.log("getHeaderIndex 執行時發生錯誤: %s", error.message);
+    return -1;
+  }
+}
+
+/**
  * @description 依目前登入電子郵件從統測報名資料取得使用者資料（安全版本）
  * @returns {Object<string, any>|null} 使用者資料或 null
  */
 function getUserData() {
-  try {
-    if (!examDataSheet || !mentorSheet) {
-      Logger.log("統測報名資料或導師名單工作表不存在");
+  const email = Session.getActiveUser().getEmail();
+  if (!email) return null;
+
+  // 快取鍵值
+  const cacheKey = CACHE_KEYS.USER_DATA_PREFIX + email;
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    return JSON.parse(cached);
+  }
+
+  let targetSheet, idColumnIndex, userType;
+
+  // 檢查是否為導師
+  if (mentorSheet) {
+    // const mentorRow = findValueRow(mentorSheet, email); // Original
+    const mentorRow = findValueRow(email, mentorSheet); // Changed
+    if (mentorRow && mentorRow > 0) {
+      targetSheet = mentorSheet;
+      idColumnIndex = getHeaderIndex(targetSheet, "信箱");
+      userType = "導師";
+    }
+  }
+
+  // 如果不是導師，或導師表不存在，則檢查是否為學生
+  if (!targetSheet && examDataSheet) {
+    // const studentRow = findValueRow(examDataSheet, email); // Original
+    const studentRow = findValueRow(email, examDataSheet); // Changed
+    if (studentRow && studentRow > 0) {
+      targetSheet = examDataSheet;
+      idColumnIndex = getHeaderIndex(targetSheet, "信箱");
+      userType = "學生";
+    } else {
+      // 如果在學生資料中也找不到，則回傳 null
+      Logger.log(`使用者 ${email} 在導師及學生名單中均未找到`);
       return null;
     }
-
-    const loginEmail = Session.getActiveUser().getEmail();
-    if (!loginEmail || !isValidEmail(loginEmail)) {
-      Logger.log("使用者未登入或電子郵件格式無效");
-      return null;
-    }
-
-    // 嘗試從快取獲取使用者資料
-    const cacheKey = `user_${loginEmail}`;
-
-    let userData = getCacheData(cacheKey);
-    if (userData) {
-      Logger.log("從快取取得使用者資料：%s", loginEmail);
-      return userData;
-    }
-
-    // 嘗試從統測報名資料工作表尋找使用者
-    userData = findUserInSheet(loginEmail, examDataSheet);
-    if (userData) {
-      userData.userType = "學生"; // 快取使用者資料（較短的快取時間）
-      setCacheData(cacheKey, userData, 1800); // 30 分鐘
-      return userData;
-    }
-
-    // 嘗試從導師名單工作表尋找使用者
-    userData = findUserInSheet(loginEmail, mentorSheet);
-    if (userData) {
-      userData.userType = "導師"; // 快取使用者資料（較短的快取時間）
-      setCacheData(cacheKey, userData, 1800); // 30 分鐘
-      Logger.log("從導師名單工作表取得使用者資料：%s", loginEmail);
-      return userData;
-    }
-
-    if (!userData) {
-      Logger.log("找不到使用者資料，信箱：%s", loginEmail);
-      return null;
-    }
-  } catch (error) {
-    Logger.log("getUserData() 發生錯誤：%s", error.message);
+  } else if (!targetSheet) {
+    // 如果兩個工作表都不存在
+    Logger.log("導師名單和統測報名資料工作表均不存在");
     return null;
   }
+
+  // const userRow = findValueRow(target, email); // Original
+  // const userRow = findValueRow(email, target); // Changed
+  const userRow = findValueRow(email, targetSheet); // Corrected: Use targetSheet
+
+  if (!userRow || userRow === 0) {
+    Logger.log("找不到使用者資料，信箱：%s", email);
+    return null;
+  }
+
+  const headers = targetSheet
+    .getRange(1, 1, 1, targetSheet.getLastColumn())
+    .getValues()[0];
+  const dataRow = targetSheet
+    .getRange(userRow, 1, 1, targetSheet.getLastColumn())
+    .getValues()[0];
+
+  const userData = headers.reduce((acc, key, idx) => {
+    if (key && idx < dataRow.length) {
+      acc[String(key)] = dataRow[idx] !== null ? dataRow[idx] : "";
+    }
+    return acc;
+  }, {});
+
+  userData.userType = userType;
+
+  // 快取使用者資料（較長的快取時間）
+  setCacheData(cacheKey, userData, 86400); // 24 小時
+
+  Logger.log("getUserData() 成功取得使用者資料：%s", email);
+  return userData;
 }
 
 /**
@@ -188,21 +238,24 @@ function getUserData() {
 function findUserInSheet(email, target) {
   try {
     const userRow = findValueRow(email, target);
-    if (userRow && userRow > 0) {
-      const headers = target
-        .getRange(1, 1, 1, target.getLastColumn())
-        .getValues()[0];
-      const dataRow = target
-        .getRange(userRow, 1, 1, target.getLastColumn())
-        .getValues()[0];
-
-      userData = headers.reduce((acc, key, idx) => {
-        if (key && idx < dataRow.length) {
-          acc[String(key)] = dataRow[idx] !== null ? dataRow[idx] : "";
-        }
-        return acc;
-      }, {});
+    if (!userRow || userRow === 0) {
+      Logger.log("找不到使用者資料，信箱：%s", email);
+      return null;
     }
+
+    const headers = target
+      .getRange(1, 1, 1, target.getLastColumn())
+      .getValues()[0];
+    const dataRow = target
+      .getRange(userRow, 1, 1, target.getLastColumn())
+      .getValues()[0];
+
+    const userData = headers.reduce((acc, key, idx) => {
+      if (key && idx < dataRow.length) {
+        acc[String(key)] = dataRow[idx] !== null ? dataRow[idx] : "";
+      }
+      return acc;
+    }, {});
 
     return userData ? userData : null;
   } catch (error) {
