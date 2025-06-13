@@ -24,7 +24,7 @@ function onOpen() {
       .createMenu("志願調查系統")
       .addItem("匯出報名用CSV", "exportCsv")
       .addItem("清除快取", "clearAllCache")
-      .addItem("顯示志願統計", "showStatisticsPage") // 新增統計頁面選項
+      .addItem("各志願選填人數統計", "showStatisticsPage") // 新增統計頁面選項
       .addToUi();
     Logger.log("功能表建立成功");
   } catch (error) {
