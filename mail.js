@@ -23,8 +23,8 @@ function sendResultNotificationEmail(user, toEmail, wishes, submissionTime, conf
     
     // 注入變數到範本中
     template.className = user['班級名稱'] || "";
-    template.studentId = user['學號'] || "";
     template.studentName = user['考生姓名'] || "";
+    template.studentId = user['學號'] || "";
     template.wishes = wishes.filter(w => w && w.trim() !== "").map((wish)=>departmentName(wish));
     template.submissionTime = submissionTime;
     template.configs = configs;
