@@ -29,12 +29,12 @@ function getServiceUrl() {
 function getConfigs() {
   try {
     if (!configSheet) {
-      throw new Error("參數設定工作表不存在");
+      throw new Error("(getConfigs)參數設定工作表不存在");
     }
 
     const dataRange = configSheet.getDataRange();
     if (dataRange.getNumRows() > MAX_SHEET_ROWS) {
-      throw new Error("參數設定資料過大");
+      throw new Error("(getConfigs)參數設定資料過大");
     }
 
     const data = dataRange.getValues();
@@ -55,13 +55,13 @@ function getConfigs() {
     const requiredParams = ["系統名稱", "系統關閉時間"];
     for (const param of requiredParams) {
       if (!configs[param]) {
-        Logger.log("缺少必要參數：%s", param);
+        Logger.log("(getConfigs)缺少必要參數：%s", param);
       }
     }
 
     return configs;
   } catch (error) {
-    Logger.log("取得參數失敗：%s", error.message);
+    Logger.log("(getConfigs)取得參數失敗：%s", error.message);
     return {};
   }
 }
@@ -93,7 +93,7 @@ function getSheetDataSafely(sheet, requiredHeaders = []) {
       dataRange.getNumRows() > MAX_SHEET_ROWS
     ) {
       Logger.log(
-        "工作表 %s 資料列數異常：%d",
+        "(getSheetDataSafely)工作表 %s 資料列數異常：%d",
         sheet.getName(),
         dataRange.getNumRows()
       );
@@ -108,7 +108,7 @@ function getSheetDataSafely(sheet, requiredHeaders = []) {
     for (const requiredHeader of requiredHeaders) {
       if (!headers.includes(requiredHeader)) {
         Logger.log(
-          "工作表 %s 缺少必要標頭：%s",
+          "(getSheetDataSafely)工作表 %s 缺少必要標頭：%s",
           sheet.getName(),
           requiredHeader
         );
@@ -119,7 +119,7 @@ function getSheetDataSafely(sheet, requiredHeaders = []) {
     return { headers, data };
   } catch (error) {
     Logger.log(
-      "取得工作表資料失敗 (%s)：%s",
+      "(getSheetDataSafely)取得工作表資料失敗 (%s)：%s",
       sheet?.getName() || "unknown",
       error.message
     );
@@ -158,10 +158,12 @@ function getHeaderIndex(sheet, headerName) {
 function getUserFromCache(email) {
   if (!email) return null;
   
-  const cacheKey = CACHE_KEYS.USER_DATA_PREFIX + email;
+  const validEmailCacheKey = email.replace(/[^a-zA-Z0-9_-]/g, '_')
+  const cacheKey = CACHE_KEYS.USER_DATA_PREFIX + validEmailCacheKey;
   const cached = cache.get(cacheKey);
   
   if (cached) {
+    Logger.log("(getUserFromCache)從快取取得使用者資料：%s", email);
     return JSON.parse(cached);
   }
   
@@ -169,7 +171,7 @@ function getUserFromCache(email) {
 }
 
 /**
- * @description 在學生資料表中搜尋使用者
+ * @description 在統測報名資料表中搜尋使用者
  * @param {string} email - 使用者電子郵件
  * @returns {Object|null} 包含使用者列號、工作表、欄位索引和使用者類型的物件，或 null
  */
@@ -182,6 +184,7 @@ function findStudentUser(email) {
   const userRow = findValueRow(email, examDataSheet);
   
   if (userRow && userRow > 0) {
+    Logger.log('(findStudentUser)找到學生使用者，信箱：%s，行號：%d', email, userRow);
     return {
       userRow,
       targetSheet: examDataSheet,
@@ -207,6 +210,7 @@ function findTeacherUser(email) {
   const userRow = findValueRow(email, teacherSheet);
   
   if (userRow && userRow > 0) {
+    Logger.log('(findTeacherUser)找到老師使用者，信箱：%s，行號：%d', email, userRow);
     return {
       userRow,
       targetSheet: teacherSheet,
@@ -242,6 +246,7 @@ function buildUserDataObject(targetSheet, userRow, userType) {
     }, {});
 
     userData.userType = userType;
+    Logger.log("(buildUserDataObject)成功建立使用者資料物件：%s", JSON.stringify(userData));
     return userData;
   } catch (error) {
     Logger.log("(buildUserDataObject)建立使用者資料物件時發生錯誤：%s", error.message);
@@ -256,22 +261,26 @@ function buildUserDataObject(targetSheet, userRow, userType) {
 function getUserData() {
   const email = Session.getActiveUser().getEmail();
   if (!email) {
-    Logger.log("無法取得使用者電子郵件");
+    Logger.log("(getUserData)無法取得使用者電子郵件");
     return null;
   }
   
   // 嘗試從快取取得
   const cachedUser = getUserFromCache(email);
   if (cachedUser) {
+    Logger.log("(getUserData)從快取取得使用者資料：%s", email);
     return cachedUser;
   }
   
-  // 嘗試在學生資料表搜尋
+  // 嘗試在統測報名資料表搜尋
   let userData = findStudentUser(email);
   
   // 若未找到學生，嘗試在老師資料表搜尋
   if (!userData) {
+    Logger.log(`(getUserData)使用者 ${email} 在統測報名資料表中未找到，嘗試在老師資料表搜尋`);
     userData = findTeacherUser(email);
+  } else {
+    Logger.log(`(getUserData)使用者 ${email} 在統測報名資料表中找到`);
   }
   
   // 若均未找到，回傳 null
@@ -286,7 +295,8 @@ function getUserData() {
   
   if (userDataObject) {
     // 快取使用者資料（24 小時）
-    setCacheData(CACHE_KEYS.USER_DATA_PREFIX + email, userDataObject, 86400);
+    const validEmailCacheKey = email.replace(/[^a-zA-Z0-9_-]/g, '_')
+    setCacheData(CACHE_KEYS.USER_DATA_PREFIX + validEmailCacheKey, userDataObject, 86400);
     Logger.log("(getUserData)成功取得使用者資料：%s", email);
   }
   
@@ -305,6 +315,8 @@ function findUserInSheet(email, target) {
     if (!userRow || userRow === 0) {
       Logger.log("(findUserInSheet)找不到使用者資料，信箱：%s", email);
       return null;
+    } else {
+      Logger.log("(findUserInSheet)找到使用者資料，信箱：%s，行號：%d", email, userRow);
     }
 
     const headers = target
@@ -323,7 +335,7 @@ function findUserInSheet(email, target) {
 
     return userData ? userData : null;
   } catch (error) {
-    Logger.log("在工作表資料中尋找使用者時發生錯誤：%s", error.message);
+    Logger.log("(findUserInSheet)在工作表資料中尋找使用者時發生錯誤：%s", error.message);
     return null;
   }
 }

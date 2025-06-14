@@ -23,8 +23,8 @@ function onOpen() {
     SpreadsheetApp.getUi()
       .createMenu("志願調查系統")
       .addItem("匯出報名用CSV", "exportCsv")
-      .addItem("清除快取", "clearAllCache")
       .addItem("各志願選填人數統計", "showStatisticsPage")
+      .addItem("清除快取", "clearAllCache")
       .addToUi();
     Logger.log("(onOpen)功能表建立成功");
   } catch (error) {
