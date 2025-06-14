@@ -1,6 +1,6 @@
 // 新增安全性常數
 const MAX_CLASS_SIZE = 200; // 最大班級人數
-const REQUIRED_MENTOR_FIELDS = ["班級", "姓名"];
+const REQUIRED_TEACHER_FIELDS = ["班級", "姓名"];
 const REQUIRED_STUDENT_FIELDS = [
   "班級名稱",
   "考生姓名",
@@ -8,23 +8,23 @@ const REQUIRED_STUDENT_FIELDS = [
 ];
 
 /**
- * @description 驗證導師資料的完整性
- * @param {Object} teacher - 導師資料
+ * @description 驗證老師資料的完整性
+ * @param {Object} teacher - 老師資料
  * @returns {boolean} 資料是否有效
  */
-function validateMentorData(teacher) {
+function validateTeacherData(teacher) {
   if (!teacher || typeof teacher !== "object") {
-    Logger.log("導師資料無效或為空");
+    Logger.log("(validateTeacherData)老師資料無效或為空");
     return false;
   }
 
-  for (const field of REQUIRED_MENTOR_FIELDS) {
+  for (const field of REQUIRED_TEACHER_FIELDS) {
     if (
       !teacher[field] ||
       typeof teacher[field] !== "string" ||
       teacher[field].trim() === ""
     ) {
-      Logger.log("導師資料缺少必要欄位：%s", field);
+      Logger.log("(validateTeacherData)老師資料缺少必要欄位：%s", field);
       return false;
     }
   }
@@ -69,24 +69,24 @@ function sanitizeStudentRow(row, headers) {
 }
 
 /**
- * @description 取得導師班級學生的科系志願選擇（安全版本）
- * @param {Object} teacher - 導師資料
+ * @description 取得老師班級學生的科系志願選擇（安全版本）
+ * @param {Object} teacher - 老師資料
  * @returns {{headers: Array, data: Array}} 學生資料
  */
 function getTraineesDepartmentChoices(teacher) {
   try {
-    // 驗證導師資料
-    if (!validateMentorData(teacher)) {
-      throw new Error("導師資料驗證失敗");
+    // 驗證老師資料
+    if (!validateTeacherData(teacher)) {
+      throw new Error("(getTraineesDepartmentChoices)老師資料驗證失敗");
     }
 
     if (!studentChoiceSheet) {
-      throw new Error("考生志願列表工作表不存在");
+      throw new Error("(getTraineesDepartmentChoices)考生志願列表工作表不存在");
     }
 
     const classNames = teacher["班級"].toString().trim().split(",").map(name => name.trim());
     if (!classNames || classNames.length === 0) {
-      throw new Error("班級名稱不能為空");
+      throw new Error("(getTraineesDepartmentChoices)班級名稱不能為空");
     }
 
     // 安全地取得工作表資料
@@ -95,7 +95,7 @@ function getTraineesDepartmentChoices(teacher) {
       REQUIRED_STUDENT_FIELDS
     );
     if (!sheetData) {
-      Logger.log("無法取得考生志願列表資料");
+      Logger.log("(getTraineesDepartmentChoices)無法取得考生志願列表資料");
       return { headers: [], data: [] };
     }
 
@@ -265,7 +265,7 @@ function getClassStatistics(studentData, headers) {
       averageFee: feeCount > 0 ? Math.round(totalFee / feeCount) : 0,
     };
   } catch (error) {
-    Logger.log("計算班級統計時發生錯誤：%s", error.message);
+    Logger.log("(getClassStatistics)計算志願統計時發生錯誤：%s", error.message);
     return {
       totalStudents: 0,
       respondedStudents: 0,

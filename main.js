@@ -79,9 +79,9 @@ function doGet(request) {
       return renderStudentPage(user, configs);
     }
 
-    // 如果是導師就顯示導師頁面
-    if (user["userType"] === "導師") {
-      return renderMentorPage(user, configs);
+    // 如果是老師就顯示老師頁面
+    if (user["userType"] === "老師") {
+      return renderTeacherPage(user, configs);
     }
   } catch (err) {
     Logger.log("doGet 發生錯誤：%s\n%s", err.message, err.stack);
@@ -151,12 +151,12 @@ function renderStudentPage(user, configs) {
 }
 
 /**
- * @description 渲染導師頁面
+ * @description 渲染老師頁面
  * @param {Object} user - 使用者資料
  * @param {Object} configs - 系統參數
  * @returns {HtmlOutput} HTML 輸出
  */
-function renderMentorPage(user, configs) {
+function renderTeacherPage(user, configs) {
   try {
     const studentData = getTraineesDepartmentChoices(user);
     const template = HtmlService.createTemplateFromFile("teacherView");
@@ -169,10 +169,10 @@ function renderMentorPage(user, configs) {
     template.data = studentData.data;
 
     return setXFrameOptionsSafely(
-      template.evaluate().setTitle("導師查詢班級學生志願")
+      template.evaluate().setTitle("老師查詢班級學生志願")
     );
   } catch (error) {
-    Logger.log("渲染導師頁面時發生錯誤：%s", error.message);
+    Logger.log("(renderTeacherPage)渲染老師頁面時發生錯誤：%s", error.message);
     throw error;
   }
 }
@@ -186,17 +186,17 @@ function doPost(request) {
   try {
     // 驗證請求參數
     if (!validateRequestParameters(request.parameters)) {
-      Logger.log("POST 請求參數驗證失敗");
+      Logger.log("(doPost)POST 請求參數驗證失敗");
       return ContentService.createTextOutput("無效的請求參數").setMimeType(
         ContentService.MimeType.TEXT
       );
     }
 
-    Logger.log("doPost 請求參數：%s", JSON.stringify(request.parameters));
+    Logger.log("(doPost)請求參數：%s", JSON.stringify(request.parameters));
 
     const user = getUserData();
     if (!user || !user["統一入學測驗報名序號"]) {
-      Logger.log("無效的使用者或非學生帳號嘗試提交");
+      Logger.log("(doPost)無效的使用者或非學生帳號嘗試提交");
       return ContentService.createTextOutput("存取被拒絕").setMimeType(
         ContentService.MimeType.TEXT
       );
@@ -204,7 +204,7 @@ function doPost(request) {
 
     const configs = getConfigs();
     if (!configs || !configs["系統關閉時間"]) {
-      Logger.log("系統參數不完整");
+      Logger.log("(doPost)系統參數不完整");
       return ContentService.createTextOutput("系統設定錯誤").setMimeType(
         ContentService.MimeType.TEXT
       );
@@ -216,14 +216,14 @@ function doPost(request) {
     const tolerance = 60000; // 1 分鐘容忍時間
 
     if (isNaN(endTime.getTime())) {
-      Logger.log("系統關閉時間格式錯誤：%s", configs["系統關閉時間"]);
+      Logger.log("(doPost)系統關閉時間格式錯誤：%s", configs["系統關閉時間"]);
       return ContentService.createTextOutput("系統時間設定錯誤").setMimeType(
         ContentService.MimeType.TEXT
       );
     }
 
     if (now - endTime > tolerance) {
-      Logger.log("提交時間已過截止時間，現在：%s，截止：%s", now, endTime);
+      Logger.log("(doPost)提交時間已過截止時間，現在：%s，截止：%s", now, endTime);
       return ContentService.createTextOutput("志願調查已結束").setMimeType(
         ContentService.MimeType.TEXT
       );
@@ -244,7 +244,7 @@ function doPost(request) {
         ).trim();
         // 驗證志願格式（應為6位數字）
         if (choice && !/^\d{6}$/.test(choice)) {
-          Logger.log("無效的志願格式：%s", choice);
+          Logger.log("(doPost)無效的志願格式：%s", choice);
           return ContentService.createTextOutput("無效的志願格式").setMimeType(
             ContentService.MimeType.TEXT
           );
@@ -266,7 +266,7 @@ function doPost(request) {
     const row = findValueRow(userEmail, studentChoiceSheet);
 
     if (!row || row === 0) {
-      Logger.log("找不到使用者資料列：%s", userEmail);
+      Logger.log("(doPost)找不到使用者資料列：%s", userEmail);
       return ContentService.createTextOutput("找不到使用者資料").setMimeType(
         ContentService.MimeType.TEXT
       );
@@ -304,9 +304,9 @@ function doPost(request) {
     );
 
     // 渲染成功頁面
-    return renderSuccessPage(user, configs);
+    return renderStudentPage(user, configs);
   } catch (err) {
-    Logger.log("doPost 發生錯誤：%s\n%s", err.message, err.stack);
+    Logger.log("(doPost)發生錯誤：%s\n%s", err.message, err.stack);
     return ContentService.createTextOutput("系統錯誤，請稍後再試").setMimeType(
       ContentService.MimeType.TEXT
     );
@@ -319,7 +319,7 @@ function doPost(request) {
  * @param {Object} configs - 系統參數
  * @returns {HtmlOutput} HTML 輸出
  */
-function renderSuccessPage(user, configs) {
+function renderStudentPage(user, configs) {
   try {
     const template = HtmlService.createTemplateFromFile("success");
     template.loginEmail = Session.getActiveUser().getEmail();

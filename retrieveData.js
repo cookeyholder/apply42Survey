@@ -165,37 +165,29 @@ function getUserData() {
     return JSON.parse(cached);
   }
 
-  let targetSheet, idColumnIndex, userType;
+  let userRow, targetSheet, idColumnIndex, userType;
 
-  // 檢查是否為老師
-  if (teacherSheet) {
-    const teacherRow = findValueRow(email, teacherSheet);
-    if (teacherRow && teacherRow > 0) {
-      targetSheet = teacherSheet;
-      idColumnIndex = getHeaderIndex(targetSheet, "信箱");
-      userType = "老師";
-    }
-  }
-
-  // 如果不是老師，或老師表不存在，則檢查是否為學生
-  if (!targetSheet && examDataSheet) {
-    const studentRow = findValueRow(email, examDataSheet);
-    if (studentRow && studentRow > 0) {
+  // 檢查是否為學生
+  if (examDataSheet) {
+    userRow = findValueRow(email, examDataSheet);
+    if (userRow && userRow > 0) {
       targetSheet = examDataSheet;
       idColumnIndex = getHeaderIndex(targetSheet, "信箱");
       userType = "學生";
+    }
+  } else if (teacherSheet) {
+    userRow = findValueRow(email, teacherSheet);
+    if (userRow && userRow > 0) {
+      targetSheet = teacherSheet;
+      idColumnIndex = getHeaderIndex(targetSheet, "信箱");
+      userType = "老師";
     } else {
-      // 如果在學生資料中也找不到，則回傳 null
-      Logger.log(`使用者 ${email} 在老師及學生名單中均未找到`);
+      // 如果在老師工作表也找不到，則回傳 null
+      userRow = null;
+      Logger.log(`使用者 ${email} 在老師及統測報名資料表中均未找到`);
       return null;
     }
-  } else if (!targetSheet) {
-    // 如果兩個工作表都不存在
-    Logger.log("老師名單和統測報名資料工作表均不存在");
-    return null;
   }
-
-  const userRow = findValueRow(email, targetSheet);
 
   if (!userRow || userRow === 0) {
     Logger.log("找不到使用者資料，信箱：%s", email);
@@ -221,7 +213,7 @@ function getUserData() {
   // 快取使用者資料（較長的快取時間）
   setCacheData(cacheKey, userData, 86400); // 24 小時
 
-  Logger.log("getUserData() 成功取得使用者資料：%s", email);
+  Logger.log("(getUserData)成功取得使用者資料：%s", email);
   return userData;
 }
 
@@ -235,7 +227,7 @@ function findUserInSheet(email, target) {
   try {
     const userRow = findValueRow(email, target);
     if (!userRow || userRow === 0) {
-      Logger.log("找不到使用者資料，信箱：%s", email);
+      Logger.log("(findUserInSheet)找不到使用者資料，信箱：%s", email);
       return null;
     }
 
@@ -267,7 +259,7 @@ function findUserInSheet(email, target) {
  */
 function getNotifications(configs) {
   if (!configs || typeof configs !== "object") {
-    Logger.log("getNotifications: 參數無效");
+    Logger.log("(getNotifications)參數無效");
     return "";
   }
 
@@ -332,7 +324,7 @@ function getOptionData(user = null) {
         };
         setCacheData(CACHE_KEYS.CHOICES_DATA, choicesData);
       } catch (error) {
-        Logger.log("讀取志願選項資料時發生錯誤：%s", error.message);
+        Logger.log("(getOptionData)讀取志願選項資料時發生錯誤：%s", error.message);
         return {
           isJoined: false,
           selectedChoices: [],
@@ -342,7 +334,7 @@ function getOptionData(user = null) {
     }
 
     if (!choicesData) {
-      Logger.log("getOptionData: 志願選項資料不可用");
+      Logger.log("(getOptionData)志願選項資料不可用");
       return {
         isJoined: false,
         selectedChoices: [],
@@ -357,7 +349,7 @@ function getOptionData(user = null) {
 
     const groupIndex = choicesData.headers.indexOf(targetColumn);
     if (groupIndex === -1) {
-      Logger.log("找不到對應的群類欄位：%s", targetColumn);
+      Logger.log("(getOptionData)找不到對應的群類欄位：%s", targetColumn);
       return {
         isJoined: false,
         selectedChoices: [],
@@ -380,7 +372,7 @@ function getOptionData(user = null) {
           )
           .getValues();
       } catch (error) {
-        Logger.log("讀取學生選擇資料時發生錯誤：%s", error.message);
+        Logger.log("(getOptionData)讀取學生選擇資料時發生錯誤：%s", error.message);
         return {
           isJoined: false,
           selectedChoices: [],
@@ -390,7 +382,7 @@ function getOptionData(user = null) {
     }
 
     if (!studentData || studentData.length < 2) {
-      Logger.log("學生選擇資料不可用");
+      Logger.log("(getOptionData)學生選擇資料不可用");
       return {
         isJoined: false,
         selectedChoices: [],
@@ -439,17 +431,17 @@ function getOptionData(user = null) {
 
     const result = { isJoined, selectedChoices, departmentOptions };
     Logger.log(
-      "getOptionData() 返回資料：%s",
+      "(getOptionData)返回資料：%s",
       JSON.stringify({
-        isJoined: result.isJoined,
-        selectedChoicesCount: result.selectedChoices.filter((c) => c).length,
-        departmentOptionsCount: result.departmentOptions.length,
+        '是否參加集體報名': result.isJoined,
+        '選擇志願數': result.selectedChoices.filter((c) => c).length,
+        '志願選項數': result.departmentOptions.length,
       })
     );
 
     return result;
   } catch (error) {
-    Logger.log("getOptionData() 發生錯誤：%s", error.message);
+    Logger.log("(getOptionData)發生錯誤：%s", error.message);
     return { isJoined: false, selectedChoices: [], departmentOptions: [] };
   }
 }
@@ -466,13 +458,13 @@ function getLimitOfSchools() {
     }
 
     if (!limitOfSchoolsSheet) {
-      Logger.log("學校限制工作表不存在");
+      Logger.log("(getLimitOfSchools)學校限制工作表不存在");
       return {};
     }
 
     const sheetData = getSheetDataSafely(limitOfSchoolsSheet);
     if (!sheetData) {
-      Logger.log("無法取得學校限制資料");
+      Logger.log("(getLimitOfSchools)無法取得學校限制資料");
       return {};
     }
 
@@ -498,12 +490,12 @@ function getLimitOfSchools() {
     setCacheData(CACHE_KEYS.LIMIT_OF_SCHOOLS, limitData);
 
     Logger.log(
-      "getLimitOfSchools() 成功取得 %d 筆學校限制資料",
+      "(getLimitOfSchools)成功取得 %d 筆學校限制資料",
       Object.keys(limitData).length
     );
     return limitData;
   } catch (error) {
-    Logger.log("getLimitOfSchools() 發生錯誤：%s", error.message);
+    Logger.log("(getLimitOfSchools)發生錯誤：%s", error.message);
     return {};
   }
 }

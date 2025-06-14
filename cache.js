@@ -74,11 +74,11 @@ function setChunkedCacheData(key, data, expiration = CACHE_EXPIRATION) {
   try {
     // 驗證輸入
     if (!isValidCacheKey(key)) {
-      throw new Error("無效的快取鍵值");
+      throw new Error("(setChunkedCacheData)無效的快取鍵值");
     }
 
     if (!data) {
-      Logger.log("快取資料為空，鍵值：%s", key);
+      Logger.log("(setChunkedCacheData)快取資料為空，鍵值：%s", key);
       return;
     }
 
@@ -143,7 +143,7 @@ function getChunkedCacheData(key) {
   try {
     // 驗證輸入
     if (!isValidCacheKey(key)) {
-      Logger.log("無效的快取鍵值：%s", key);
+      Logger.log("(getChunkedCacheData)無效的快取鍵值：%s", key);
       return null;
     }
 
@@ -195,18 +195,18 @@ function setCacheData(key, data, expiration = CACHE_EXPIRATION) {
   try {
     // 驗證輸入
     if (!isValidCacheKey(key)) {
-      Logger.log("無效的快取鍵值：%s", key);
+      Logger.log("(setCacheData)無效的快取鍵值：%s", key);
       return;
     }
 
     if (!data) {
-      Logger.log("快取資料為空：%s", key);
+      Logger.log("(setCacheData)快取資料為空：%s", key);
       return;
     }
 
     // 驗證資料大小
     if (!isValidCacheSize(data)) {
-      Logger.log("快取資料過大：%s", key);
+      Logger.log("(setCacheData)快取資料過大：%s", key);
       return;
     }
 
@@ -241,7 +241,7 @@ function getCacheData(key) {
   try {
     // 驗證輸入
     if (!isValidCacheKey(key)) {
-      Logger.log("無效的快取鍵值：%s", key);
+      Logger.log("(getCacheData)無效的快取鍵值：%s", key);
       return null;
     }
 
@@ -282,7 +282,7 @@ function getCacheData(key) {
 function removeCacheData(key) {
   try {
     if (!isValidCacheKey(key)) {
-      Logger.log("無效的快取鍵值：%s", key);
+      Logger.log("(removeCacheData)無效的快取鍵值：%s", key);
       return;
     }
 

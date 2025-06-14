@@ -27,13 +27,13 @@ function isValidSearchKeyword(keyword) {
 function validateRowUpdate(row, values) {
   // 檢查列號
   if (!Number.isInteger(row) || row < 1 || row > MAX_SHEET_ROWS) {
-    Logger.log("無效的列號：%s", row);
+    Logger.log("(validateRowUpdate)無效的列號：%s", row);
     return false;
   }
 
   // 檢查數值陣列
   if (!Array.isArray(values) || values.length === 0) {
-    Logger.log("無效的數值陣列");
+    Logger.log("(validateRowUpdate)無效的數值陣列");
     return false;
   }
 
@@ -45,7 +45,7 @@ function validateRowUpdate(row, values) {
       typeof value === "string" &&
       value.length > 1000
     ) {
-      Logger.log("數值過長，可能有安全風險");
+      Logger.log("(validateRowUpdate)數值過長，可能有安全風險");
       return false;
     }
   }
@@ -61,16 +61,15 @@ function validateRowUpdate(row, values) {
  */
 function findValueRow(keyword, targetRange) {
   try {
-    Logger.log("findValueRow 被呼叫，關鍵字：%s", keyword);
-    Logger.log("findValueRow 搜尋範圍：%s", targetRange);
+    Logger.log("(findValueRow)關鍵字：%s", keyword);
     // 驗證輸入參數
     if (!isValidSearchKeyword(keyword)) {
-      Logger.log("無效的搜尋關鍵字：%s", keyword);
+      Logger.log("(findValueRow)無效的搜尋關鍵字：%s", keyword);
       return 0;
     }
 
     if (!targetRange) {
-      Logger.log("搜尋範圍不存在");
+      Logger.log("(findValueRow)搜尋範圍不存在");
       return 0;
     }
 
@@ -82,14 +81,14 @@ function findValueRow(keyword, targetRange) {
       sheet = targetRange;
       targetRange = sheet.getDataRange();
     } else {
-      Logger.log("無效的搜尋範圍類型");
+      Logger.log("(findValueRow)無效的搜尋範圍類型");
       return 0;
     }
 
     // 檢查工作表大小
     const numRows = targetRange.getNumRows();
     if (numRows > MAX_SHEET_ROWS) {
-      Logger.log("工作表過大，無法搜尋：%d 列", numRows);
+      Logger.log("(findValueRow)工作表過大，無法搜尋：%d 列", numRows);
       return 0;
     }
 
@@ -103,7 +102,7 @@ function findValueRow(keyword, targetRange) {
     if (foundCell) {
       const rowNumber = foundCell.getRow();
       Logger.log(
-        "在 %s 工作表的第 %d 列找到關鍵字: %s",
+        "(findValueRow)在 %s 工作表的第 %d 列找到關鍵字: %s",
         sheet.getName(),
         rowNumber,
         keyword
@@ -111,14 +110,14 @@ function findValueRow(keyword, targetRange) {
       return rowNumber;
     } else {
       Logger.log(
-        "在 %s 工作表中，沒有找到關鍵字：%s",
+        "(findValueRow)在 %s 工作表中，沒有找到關鍵字：%s",
         sheet.getName(),
         keyword
       );
       return 0;
     }
   } catch (error) {
-    Logger.log("findValueRow 發生錯誤：%s", error.message);
+    Logger.log("(findValueRow)發生錯誤：%s", error.message);
     return 0;
   }
 }
@@ -131,7 +130,7 @@ function findValueRow(keyword, targetRange) {
 function updateSpecificRow(row, values) {
   try {
     if (!studentChoiceSheet) {
-      throw new Error("考生志願列表工作表不存在");
+      throw new Error("(updateSpecificRow)考生志願列表工作表不存在");
     }
 
     // 確保 values 是二維陣列
@@ -141,7 +140,7 @@ function updateSpecificRow(row, values) {
 
     // 驗證輸入
     if (!validateRowUpdate(row, values[0])) {
-      throw new Error("輸入驗證失敗");
+      throw new Error("(updateSpecificRow)輸入驗證失敗");
     }
 
     // 取得標頭並驗證
@@ -155,7 +154,7 @@ function updateSpecificRow(row, values) {
     const startColumnIndex = headers.indexOf("是否參加集體報名");
 
     if (startColumnIndex === -1) {
-      throw new Error('找不到"是否參加集體報名"欄位');
+      throw new Error('(updateSpecificRow)找不到"是否參加集體報名"欄位');
     }
 
     const startColumn = startColumnIndex + 1;
@@ -163,7 +162,7 @@ function updateSpecificRow(row, values) {
 
     // 檢查範圍有效性
     if (startColumn + numColumns - 1 > studentChoiceSheet.getLastColumn()) {
-      throw new Error("更新範圍超出工作表邊界");
+      throw new Error("(updateSpecificRow)更新範圍超出工作表邊界");
     }
 
     // 清理數值 - 防止注入攻擊
@@ -182,12 +181,12 @@ function updateSpecificRow(row, values) {
     range.setValues(cleanedValues);
 
     Logger.log(
-      "成功更新考生志願列表的第 %d 列，更新 %d 個欄位",
+      "(updateSpecificRow)成功更新考生志願列表的第 %d 列，更新 %d 個欄位",
       row,
       numColumns
     );
   } catch (error) {
-    Logger.log("updateSpecificRow 發生錯誤：%s", error.message);
+    Logger.log("(updateSpecificRow)發生錯誤：%s", error.message);
     throw error;
   }
 }
@@ -204,7 +203,7 @@ function validateExportData(data) {
 
   // 檢查資料大小
   if (data.length > MAX_SHEET_ROWS) {
-    Logger.log("匯出資料過大：%d 列", data.length);
+    Logger.log("(validateExportData)匯出資料過大：%d 列", data.length);
     return false;
   }
 
@@ -239,25 +238,25 @@ function validateRequestParameters(configs) {
 
   // 檢查參數數量
   if (Object.keys(configs).length > 20) {
-    Logger.log("請求參數過多");
+    Logger.log("(validateRequestParameters)請求參數過多");
     return false;
   }
 
   // 檢查每個參數
   for (const [key, value] of Object.entries(configs)) {
     if (typeof key !== "string" || key.length > 100) {
-      Logger.log("無效的參數鍵：%s", key);
+      Logger.log("(validateRequestParameters)無效的參數鍵：%s", key);
       return false;
     }
 
     if (Array.isArray(value)) {
       if (value.length > 10) {
-        Logger.log("參數陣列過大：%s", key);
+        Logger.log("(validateRequestParameters)參數陣列過大：%s", key);
         return false;
       }
       for (const item of value) {
         if (typeof item === "string" && item.length > MAX_PARAMETER_LENGTH) {
-          Logger.log("參數值過長：%s", key);
+          Logger.log("(validateRequestParameters)參數值過長：%s", key);
           return false;
         }
       }
@@ -265,7 +264,7 @@ function validateRequestParameters(configs) {
       typeof value === "string" &&
       value.length > MAX_PARAMETER_LENGTH
     ) {
-      Logger.log("參數值過長：%s", key);
+      Logger.log("(validateRequestParameters)參數值過長：%s", key);
       return false;
     }
   }
@@ -281,25 +280,25 @@ function exportCsv() {
   try {
     // 驗證權限和工作表
     if (!forImportSheet) {
-      throw new Error("匯入報名系統工作表不存在");
+      throw new Error("(exportCsv)匯入報名系統工作表不存在");
     }
 
     const configs = getConfigs();
     if (!configs || !configs["報名學校代碼"]) {
-      throw new Error("無法取得學校代碼參數");
+      throw new Error("(exportCsv)無法取得學校代碼參數");
     }
 
     // 取得資料
     const dataRange = forImportSheet.getDataRange();
     if (dataRange.getNumRows() === 0) {
-      throw new Error("沒有可匯出的資料");
+      throw new Error("(exportCsv)沒有可匯出的資料");
     }
 
     const [headers, ...rawData] = dataRange.getValues();
 
     // 驗證資料
     if (!validateExportData(rawData)) {
-      throw new Error("匯出資料驗證失敗");
+      throw new Error("(exportCsv)匯出資料驗證失敗");
     }
 
     // 過濾和清理資料
@@ -337,7 +336,7 @@ function exportCsv() {
 
     // 驗證檔名安全性
     if (!/^[a-zA-Z0-9_-]+\.csv$/.test(fileName)) {
-      throw new Error("檔名包含不安全字符");
+      throw new Error("(exportCsv)檔名包含不安全字符");
     }
 
     // 取得試算表所在的資料夾
@@ -357,7 +356,7 @@ function exportCsv() {
 
     const fileUrl = file.getDownloadUrl();
     Logger.log(
-      "CSV 檔案已建立：%s (%d 列資料)",
+      "(exportCsv)CSV 檔案已建立：%s (%d 列資料)",
       fileName,
       sanitizedData.length
     );
@@ -389,7 +388,7 @@ function exportCsv() {
     ui.showModalDialog(htmlOutput, "CSV 匯出完成");
     return fileUrl;
   } catch (error) {
-    Logger.log("exportCsv 發生錯誤：%s", error.message);
+    Logger.log("(exportCsv)發生錯誤：%s", error.message);
 
     try {
       const ui = SpreadsheetApp.getUi();
@@ -399,7 +398,7 @@ function exportCsv() {
         ui.ButtonSet.OK
       );
     } catch (uiError) {
-      Logger.log("顯示錯誤訊息失敗：%s", uiError.message);
+      Logger.log("(exportCsv)顯示錯誤訊息失敗：%s", uiError.message);
     }
 
     return null;
@@ -415,7 +414,7 @@ function exportCsv() {
 function getSheetDataSafely(sheet, requiredHeaders = []) {
   try {
     if (!sheet) {
-      Logger.log("工作表不存在");
+      Logger.log("(getSheetDataSafely)工作表不存在");
       return null;
     }
 
@@ -424,12 +423,12 @@ function getSheetDataSafely(sheet, requiredHeaders = []) {
 
     // 檢查工作表大小
     if (numRows > MAX_SHEET_ROWS || numCols > 100) {
-      Logger.log("工作表過大：%d 列 %d 欄", numRows, numCols);
+      Logger.log("(getSheetDataSafely)工作表過大：%d 列 %d 欄", numRows, numCols);
       return null;
     }
 
     if (numRows === 0 || numCols === 0) {
-      Logger.log("工作表為空");
+      Logger.log("(getSheetDataSafely)工作表為空");
       return { headers: [], data: [] };
     }
 
@@ -442,7 +441,7 @@ function getSheetDataSafely(sheet, requiredHeaders = []) {
         (header) => !headers.includes(header)
       );
       if (missingHeaders.length > 0) {
-        Logger.log("工作表缺少必要標頭：%s", missingHeaders.join(", "));
+        Logger.log("(getSheetDataSafely)工作表缺少必要標頭：%s", missingHeaders.join(", "));
         return null;
       }
     }
@@ -453,10 +452,10 @@ function getSheetDataSafely(sheet, requiredHeaders = []) {
       data = sheet.getRange(2, 1, numRows - 1, numCols).getValues();
     }
 
-    Logger.log("成功讀取工作表 %s：%d 列資料", sheet.getName(), data.length);
+    Logger.log("(getSheetDataSafely)成功讀取工作表 %s：%d 列資料", sheet.getName(), data.length);
     return { headers, data };
   } catch (error) {
-    Logger.log("讀取工作表時發生錯誤：%s", error.message);
+    Logger.log("(getSheetDataSafely)讀取工作表時發生錯誤：%s", error.message);
     return null;
   }
 }
