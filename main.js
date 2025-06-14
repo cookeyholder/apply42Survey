@@ -280,6 +280,7 @@ function doPost(request) {
     updateSpecificRow(row, updateData);
     Logger.log("成功更新使用者 %s 的志願資料", userEmail);
 
+    // 建立日誌記錄
     record = {
       isJoined: isJoined,
       departmentChoices_1: departmentChoices[0],
@@ -290,6 +291,17 @@ function doPost(request) {
       departmentChoices_6: departmentChoices[5],
     };
     logAdder(user, record);
+
+    // 寄送選填結果通知信
+    sendResultNotificationEmail(
+      user,
+      userEmail, 
+      departmentChoices,
+      new Date().toLocaleString("zh-TW", {
+        timeZone: "Asia/Taipei",
+      }),
+      configs
+    );
 
     // 渲染成功頁面
     return renderSuccessPage(user, configs);

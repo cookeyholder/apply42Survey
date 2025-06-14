@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高雄高工四技二專甄選入學志願選填內容通知</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3498db, #1a5276);
+            color: white;
+            padding: 30px 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px 25px;
+        }
+
+        .greeting {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 25px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            font-size: 16px;
+        }
+
+        .section h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eaeaea;
+            padding-bottom: 8px;
+        }
+
+        .wish-list {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+        }
+
+        .wish-item {
+            display: flex;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .wish-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .wish-number {
+            background-color: #3498db;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            text-align: center;
+            line-height: 24px;
+            font-weight: 700;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .wish-content {
+            flex: 1;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .info-table td {
+            padding: 8px 0;
+        }
+
+        .info-table td:first-child {
+            font-weight: 500;
+            width: 120px;
+            color: #333;
+        }
+
+        .notice {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .notice p {
+            margin: 0;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px 25px;
+            background-color: #f1f1f1;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .school-name {
+            font-weight: 700;
+            color: #333;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 10px;
+                width: auto;
+            }
+
+            .header {
+                padding: 20px 15px;
+            }
+
+            .content {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <?= configs['通知信內容標題'] ?>
+            </h1>
+        </div>
+
+        <div class="content">
+            <div class="greeting">
+                <?= className ?>
+                <?= studentName ?>您好：
+            </div>
+
+            <div class="section">
+                <p>您完成了四技二專甄選入學第一階段志願選填，以下是您的選填結果摘要：</p>
+
+                <table class="info-table">
+                    <tr>
+                        <td>選填時間：</td>
+                        <td>
+                            <?= submissionTime ?>
+                        </td>
+                    </tr>
+                    <? if (className) { ?>
+                    <tr>
+                        <td>班級：</td>
+                        <td>
+                            <?= className ?>
+                        </td>
+                    </tr>
+                    <? } ?>
+                    <? if (studentId) { ?>
+                    <tr>
+                        <td>學號：</td>
+                        <td>
+                            <?= studentId ?>
+                        </td>
+                    </tr>
+                    <? } ?>
+                </table>
+
+                <div class="wish-list">
+                    <? for (var i = 0; i < wishes.length; i++) { ?>
+                    <div class="wish-item">
+                        <div class="wish-number">
+                            <?= i+1 ?>
+                        </div>
+                        <div class="wish-content">
+                            <?= wishes[i] ?>
+                        </div>
+                    </div>
+                    <? } ?>
+                </div>
+
+                <div class="notice">
+                    <p>註：此通知信僅為您選填志願的確認資訊，若有任何問題請洽詢教務處註冊組。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>此郵件由系統自動寄出，請勿直接回覆</p>
+        </div>
+    </div>
+</body>
+
+</html>
