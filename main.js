@@ -24,11 +24,11 @@ function onOpen() {
       .createMenu("志願調查系統")
       .addItem("匯出報名用CSV", "exportCsv")
       .addItem("清除快取", "clearAllCache")
-      .addItem("各志願選填人數統計", "showStatisticsPage") // 新增統計頁面選項
+      .addItem("各志願選填人數統計", "showStatisticsPage")
       .addToUi();
-    Logger.log("功能表建立成功");
+    Logger.log("(onOpen)功能表建立成功");
   } catch (error) {
-    Logger.log("建立功能表時發生錯誤：%s", error.message);
+    Logger.log("(onOpen)建立功能表時發生錯誤：%s", error.message);
   }
 }
 
@@ -47,13 +47,13 @@ function doGet(request) {
       );
     }
 
-    Logger.log("doGet 請求參數：%s", JSON.stringify(request.parameters));
+    Logger.log("(doGet)請求參數：%s", JSON.stringify(request.parameters));
 
     const user = getUserData();
-    Logger.log("doGet 取得的使用者資料：%s", JSON.stringify(user));
+    Logger.log("(doGet)取得的使用者資料：%s", JSON.stringify(user));
 
     const configs = getConfigs();
-    Logger.log("doGet 取得的系統設定資訊：%s", JSON.stringify(configs));
+    Logger.log("(doGet)取得的系統設定資訊：%s", JSON.stringify(configs));
 
     // 如果使用者未登入或登入的不在允許名單之中
     if (!user) {
@@ -68,7 +68,7 @@ function doGet(request) {
 
     // 驗證系統參數
     if (!configs || !configs["系統名稱"]) {
-      Logger.log("系統參數不完整");
+      Logger.log("(doGet)系統參數不完整");
       return HtmlService.createHtmlOutput(
         '<div style="padding: 20px; color: red;">系統設定錯誤，請聯絡管理員</div>'
       );
@@ -84,7 +84,7 @@ function doGet(request) {
       return renderTeacherPage(user, configs);
     }
   } catch (err) {
-    Logger.log("doGet 發生錯誤：%s\n%s", err.message, err.stack);
+    Logger.log("(doGet)發生錯誤：%s\n%s", err.message, err.stack);
 
     // 轉義 HTML 特殊字符以防止 XSS
     const escapeHtml = (text) => {
@@ -145,7 +145,7 @@ function renderStudentPage(user, configs) {
       template.evaluate().setTitle("四技二專甄選入學志願調查系統")
     );
   } catch (error) {
-    Logger.log("渲染學生頁面時發生錯誤：%s", error.message);
+    Logger.log("(renderStudentPage)渲染學生頁面時發生錯誤：%s", error.message);
     throw error;
   }
 }
@@ -277,8 +277,9 @@ function doPost(request) {
       ? [joinedParam, ...departmentChoices]
       : [joinedParam, "", "", "", "", "", ""];
 
-    updateSpecificRow(row, updateData);
-    Logger.log("成功更新使用者 %s 的志願資料", userEmail);
+    if (updateSpecificRow(row, updateData)){
+      Logger.log("(doPost)成功更新使用者 %s 的志願資料", JSON.stringify(user));
+    }
 
     // 建立日誌記錄
     record = {
@@ -338,7 +339,7 @@ function renderStudentPage(user, configs) {
       template.evaluate().setTitle("四技二專甄選入學志願調查系統")
     );
   } catch (error) {
-    Logger.log("渲染成功頁面時發生錯誤：%s", error.message);
+    Logger.log("(renderStudentPage)渲染成功頁面時發生錯誤：%s", error.message);
     throw error;
   }
 }
@@ -350,12 +351,12 @@ function clearAllCache() {
   try {
     const cache = CacheService.getScriptCache();
     cache.removeAll(Object.values(CACHE_KEYS));
-    Logger.log("已清除所有快取");
+    Logger.log("(clearAllCache)已清除所有快取");
 
     const ui = SpreadsheetApp.getUi();
     ui.alert("快取已清除", "所有快取資料已成功清除。", ui.ButtonSet.OK);
   } catch (error) {
-    Logger.log("清除快取時發生錯誤：%s", error.message);
+    Logger.log("(clearAllCache)清除快取時發生錯誤：%s", error.message);
     const ui = SpreadsheetApp.getUi();
     ui.alert("錯誤", "清除快取時發生錯誤：" + error.message, ui.ButtonSet.OK);
   }

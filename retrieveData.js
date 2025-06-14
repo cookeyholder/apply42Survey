@@ -168,13 +168,16 @@ function getUserData() {
   let userRow, targetSheet, idColumnIndex, userType;
 
   // 檢查是否為學生
-  if (examDataSheet) {
-    userRow = findValueRow(email, examDataSheet);
-    if (userRow && userRow > 0) {
-      targetSheet = examDataSheet;
-      idColumnIndex = getHeaderIndex(targetSheet, "信箱");
-      userType = "學生";
-    }
+  if (!examDataSheet) {
+    Logger.log(`examDataSheet 不存在`);
+    return null;
+  }
+
+  userRow = findValueRow(email, examDataSheet);
+  if (userRow && userRow > 0) {
+    targetSheet = examDataSheet;
+    idColumnIndex = getHeaderIndex(targetSheet, "信箱");
+    userType = "學生";
   } else if (teacherSheet) {
     userRow = findValueRow(email, teacherSheet);
     if (userRow && userRow > 0) {
@@ -188,6 +191,7 @@ function getUserData() {
       return null;
     }
   }
+  
 
   if (!userRow || userRow === 0) {
     Logger.log("找不到使用者資料，信箱：%s", email);

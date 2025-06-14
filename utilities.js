@@ -185,6 +185,7 @@ function updateSpecificRow(row, values) {
       row,
       numColumns
     );
+    return true;
   } catch (error) {
     Logger.log("(updateSpecificRow)發生錯誤：%s", error.message);
     throw error;
