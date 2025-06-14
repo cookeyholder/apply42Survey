@@ -10,6 +10,7 @@ const CACHE_KEYS = {
   DEPARTMENT_OPTIONS: "departmentOptions",
   EXAM_DATA: "examData",
   CHOICES_DATA: "choicesData",
+  USER_DATA_PREFIX: "userData_",
 };
 
 /**
