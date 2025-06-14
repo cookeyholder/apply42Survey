@@ -11,7 +11,7 @@ const choicesSheet = ss.getSheetByName("志願選項");
 const studentChoiceSheet = ss.getSheetByName("考生志願列表");
 const limitOfSchoolsSheet = ss.getSheetByName("可報名之系科組學程數");
 const forImportSheet = ss.getSheetByName("匯入報名系統");
-const mentorSheet = ss.getSheetByName("導師名單");
+const teacherSheet = ss.getSheetByName("老師名單");
 const logSheet = ss.getSheetByName("日誌");
 const limitOfChoices = 6; // 最多可填的志願數量
 
@@ -159,7 +159,7 @@ function renderStudentPage(user, configs) {
 function renderMentorPage(user, configs) {
   try {
     const studentData = getTraineesDepartmentChoices(user);
-    const template = HtmlService.createTemplateFromFile("mentorView");
+    const template = HtmlService.createTemplateFromFile("teacherView");
 
     template.loginEmail = Session.getActiveUser().getEmail();
     template.serviceUrl = getServiceUrl();

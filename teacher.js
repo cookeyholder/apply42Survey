@@ -9,20 +9,20 @@ const REQUIRED_STUDENT_FIELDS = [
 
 /**
  * @description 驗證導師資料的完整性
- * @param {Object} mentor - 導師資料
+ * @param {Object} teacher - 導師資料
  * @returns {boolean} 資料是否有效
  */
-function validateMentorData(mentor) {
-  if (!mentor || typeof mentor !== "object") {
+function validateMentorData(teacher) {
+  if (!teacher || typeof teacher !== "object") {
     Logger.log("導師資料無效或為空");
     return false;
   }
 
   for (const field of REQUIRED_MENTOR_FIELDS) {
     if (
-      !mentor[field] ||
-      typeof mentor[field] !== "string" ||
-      mentor[field].trim() === ""
+      !teacher[field] ||
+      typeof teacher[field] !== "string" ||
+      teacher[field].trim() === ""
     ) {
       Logger.log("導師資料缺少必要欄位：%s", field);
       return false;
@@ -70,13 +70,13 @@ function sanitizeStudentRow(row, headers) {
 
 /**
  * @description 取得導師班級學生的科系志願選擇（安全版本）
- * @param {Object} mentor - 導師資料
+ * @param {Object} teacher - 導師資料
  * @returns {{headers: Array, data: Array}} 學生資料
  */
-function getTraineesDepartmentChoices(mentor) {
+function getTraineesDepartmentChoices(teacher) {
   try {
     // 驗證導師資料
-    if (!validateMentorData(mentor)) {
+    if (!validateMentorData(teacher)) {
       throw new Error("導師資料驗證失敗");
     }
 
@@ -84,8 +84,8 @@ function getTraineesDepartmentChoices(mentor) {
       throw new Error("考生志願列表工作表不存在");
     }
 
-    const className = mentor["班級"].toString().trim();
-    if (!className) {
+    const classNames = teacher["班級"].toString().trim().split(",").map(name => name.trim());
+    if (!classNames || classNames.length === 0) {
       throw new Error("班級名稱不能為空");
     }
 
@@ -133,8 +133,8 @@ function getTraineesDepartmentChoices(mentor) {
 
     // 篩選出該班級的學生資料
     const classStudents = data.filter((row) => {
-      const rowClassName = row[fieldIndexes.classIndex];
-      return rowClassName && rowClassName.toString().trim() === className;
+      const rowclassName = row[fieldIndexes.classIndex];
+      return rowclassName && classNames.includes(rowclassName.toString().trim());
     });
 
     // 檢查班級大小
@@ -190,7 +190,7 @@ function getTraineesDepartmentChoices(mentor) {
 
     Logger.log(
       "成功取得班級 %s 的學生資料，共 %d 人",
-      className,
+      classNames,
       processedData.length
     );
 

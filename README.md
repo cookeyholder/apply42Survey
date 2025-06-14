@@ -29,13 +29,13 @@
 
 *   **前端：** 使用 HTML、CSS 和 JavaScript (透過 `HtmlService`) 產生使用者介面。
     *   `index.html`: 學生填報介面。
-    *   `mentorView.html`: 導師查詢介面。
+    *   `teacherView.html`: 導師查詢介面。
     *   `success.html`: 學生提交成功頁面。
 *   **後端：** Google Apps Script (`.gs` 檔案) 處理業務邏輯、資料存取和使用者驗證。
     *   `main.js`: 處理主要的 HTTP GET/POST 請求、頁面渲染、選單建立。
     *   `retrieveData.js`: 負責從 Google Sheets 取得設定、使用者資料、志願選項等。
     *   `utilities.js`: 提供共用工具函式，如資料驗證、在試算表中尋找資料、更新資料列、CSV 匯出等。
-    *   `mentor.js`: 處理導師相關功能，如取得班級學生志願資料。
+    *   `teacher.js`: 處理導師相關功能，如取得班級學生志願資料。
     *   `cache.js`: (推測) 處理快取邏輯，以提升效能。
 *   **資料庫：** Google Sheets。
 
@@ -55,7 +55,7 @@
 4.  **可報名之系科組學程數 (limitOfSchoolsSheet):**
     *   用途：定義各校可報名的系科組學程數量上限。
     *   欄位範例：`學校代碼`, `學校名稱`, `可報名系科組學程數上限`。
-5.  **導師名單 (mentorSheet):**
+5.  **導師名單 (teacherSheet):**
     *   用途：儲存導師基本資料，用於權限判斷。
     *   欄位範例：`信箱`, `班級`, `姓名`...
 6.  **考生志願列表 (studentChoiceSheet):**

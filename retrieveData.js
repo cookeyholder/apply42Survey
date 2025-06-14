@@ -1,4 +1,4 @@
-const cache = CacheService.getScriptCache(); // Add this line to define cache
+const cache = CacheService.getScriptCache();
 // 新增常數用於資料驗證
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const REQUIRED_EXAM_HEADERS = [
@@ -167,39 +167,35 @@ function getUserData() {
 
   let targetSheet, idColumnIndex, userType;
 
-  // 檢查是否為導師
-  if (mentorSheet) {
-    // const mentorRow = findValueRow(mentorSheet, email); // Original
-    const mentorRow = findValueRow(email, mentorSheet); // Changed
-    if (mentorRow && mentorRow > 0) {
-      targetSheet = mentorSheet;
+  // 檢查是否為老師
+  if (teacherSheet) {
+    const teacherRow = findValueRow(email, teacherSheet);
+    if (teacherRow && teacherRow > 0) {
+      targetSheet = teacherSheet;
       idColumnIndex = getHeaderIndex(targetSheet, "信箱");
-      userType = "導師";
+      userType = "老師";
     }
   }
 
-  // 如果不是導師，或導師表不存在，則檢查是否為學生
+  // 如果不是老師，或老師表不存在，則檢查是否為學生
   if (!targetSheet && examDataSheet) {
-    // const studentRow = findValueRow(examDataSheet, email); // Original
-    const studentRow = findValueRow(email, examDataSheet); // Changed
+    const studentRow = findValueRow(email, examDataSheet);
     if (studentRow && studentRow > 0) {
       targetSheet = examDataSheet;
       idColumnIndex = getHeaderIndex(targetSheet, "信箱");
       userType = "學生";
     } else {
       // 如果在學生資料中也找不到，則回傳 null
-      Logger.log(`使用者 ${email} 在導師及學生名單中均未找到`);
+      Logger.log(`使用者 ${email} 在老師及學生名單中均未找到`);
       return null;
     }
   } else if (!targetSheet) {
     // 如果兩個工作表都不存在
-    Logger.log("導師名單和統測報名資料工作表均不存在");
+    Logger.log("老師名單和統測報名資料工作表均不存在");
     return null;
   }
 
-  // const userRow = findValueRow(target, email); // Original
-  // const userRow = findValueRow(email, target); // Changed
-  const userRow = findValueRow(email, targetSheet); // Corrected: Use targetSheet
+  const userRow = findValueRow(email, targetSheet);
 
   if (!userRow || userRow === 0) {
     Logger.log("找不到使用者資料，信箱：%s", email);

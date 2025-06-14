@@ -156,7 +156,7 @@
                                 </div>
                             </div>
                             <div class="col-12 col-sm-6 col-md mb-3">
-                                <div class="text-muted">導師</div>
+                                <div class="text-muted">老師</div>
                                 <div>
                                     <?= user["姓名"] ?>
                                 </div>
@@ -248,6 +248,12 @@
                     return;
                 }
 
+                data.sort((a, b) => {
+                    const serialA = a[headers.indexOf('統一入學測驗報名序號')] || "";
+                    const serialB = b[headers.indexOf('統一入學測驗報名序號')] || "";
+                    return serialA.localeCompare(serialB, "zh-TW");
+                });
+
                 // 產生學生資料卡片
                 const cardsHtml = data.map(row => {
                     const studentNameIndex = headers.indexOf('考生姓名');
@@ -286,7 +292,7 @@
                                 <div class="student-card-header">
                                     ${row[studentNameIndex]} 
                                     <small class="text-muted">
-                                        (${row[groupIndex] || ''} / ${row[paymentTypeIndex] || ''} ${row[isJoinedIndex] === '是' ? `/ ${row[feeIndex]} 元` : ''})
+                                    (${row[classIndex] || ''} / ${row[groupIndex] || ''} / ${row[paymentTypeIndex] || ''} ${row[isJoinedIndex] === '是' ? `/ ${row[feeIndex]} 元` : ''})
                                     </small>
                                 </div>
                                 <div class="student-card-body">
