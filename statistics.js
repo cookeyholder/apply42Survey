@@ -8,7 +8,7 @@ function showStatisticsPage() {
     .setWidth(900)
     .setHeight(700);
   htmlOutput = setXFrameOptionsSafely(htmlOutput); // Use the existing safe wrapper
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, "志願選填統計");
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, "各志願選填統計");
 }
 
 /**
@@ -61,8 +61,6 @@ function getRawStatisticsData() {
 
     const statistics = {};
 
-    // Removed choiceToGroupMap creation logic
-
     // 遍歷「考生志願列表」的每一列資料 (跳過標頭)
     for (let i = 1; i < studentData.length; i++) {
       const row = studentData[i];
@@ -109,6 +107,7 @@ function getRawStatisticsData() {
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count);
     }
+
     Logger.log("產生的統計資料：%s", JSON.stringify(sortedStatistics));
     return sortedStatistics;
   } catch (err) {
@@ -168,7 +167,7 @@ function getUniqueGroupNames() {
     }
     Logger.log(
       "取得的唯一群類名稱：%s",
-      JSON.stringify(Array.from(groupNames))
+      JSON.stringify(Array.from(groupNames).sort())
     );
     return { groupNames: Array.from(groupNames).sort() }; // 返回排序後的陣列
   } catch (err) {

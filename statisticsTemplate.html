@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>志願選填統計</title>
+    <title>各志願選填統計</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -49,7 +49,7 @@
 
 <body>
     <div class="container">
-        <h1 class="mb-4 text-center">志願選填統計結果</h1>
+        <h1 class="mb-4 text-center">各志願選填統計結果</h1>
         <div id="loadingMessage">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">載入中...</span>
@@ -82,6 +82,8 @@
                 .getRawStatisticsData(); // 然後獲取統計數據
         });
 
+        let rawDataStats = {};
+
         function populateGroupFilter(data) {
             if (data && data.error) {
                 console.error("載入群類資料錯誤:", data.error);
@@ -93,7 +95,7 @@
 
             const groupNames = data.groupNames || [];
             const selectElement = document.getElementById('groupFilter');
-            selectElement.innerHTML = '<option value="">所有群(類)</option>'; // 重設選項
+            selectElement.innerHTML = '<option value="">所有群(類)</option>';
 
             groupNames.forEach(groupName => {
                 const option = document.createElement('option');
@@ -108,8 +110,6 @@
             });
         }
 
-        let rawData = {}; // 用於存儲原始統計數據
-
         function displayStatistics(data) {
             document.getElementById('loadingMessage').style.display = 'none';
 
@@ -117,8 +117,12 @@
                 displayError({message: data.error});
                 return;
             }
-            rawData = data; // 保存原始數據
-            filterAndDisplayStatistics(''); // 初始顯示所有數據
+
+            // 依照 data keys(類群代碼+類群名稱) 的順序顯示統計資料
+            rawDataStats = {};
+            const groupNames = Object.keys(data).sort();
+            groupNames.forEach((groupName) => rawDataStats[groupName] = data[groupName] || []);
+            filterAndDisplayStatistics('');
         }
 
         function filterAndDisplayStatistics(selectedGroup) {
@@ -126,11 +130,11 @@
             resultDiv.innerHTML = ''; // 清除舊內容
 
             const dataToDisplay = {};
-            if (selectedGroup && rawData[selectedGroup]) {
-                dataToDisplay[selectedGroup] = rawData[selectedGroup];
+            if (selectedGroup && rawDataStats[selectedGroup]) {
+                dataToDisplay[selectedGroup] = rawDataStats[selectedGroup];
             } else if (!selectedGroup) {
                 // 如果沒有選擇特定群組 (即 "所有群(類)"), 則顯示所有群組的數據
-                Object.assign(dataToDisplay, rawData);
+                Object.assign(dataToDisplay, rawDataStats);
             }
 
 
