@@ -19,7 +19,7 @@ function sendResultNotificationEmail(user, toEmail, wishes, submissionTime, conf
 
 
     // 建立 HTML 範本
-    const template = HtmlService.createTemplateFromFile("resultNotificationEamil");
+    const template = HtmlService.createTemplateFromFile("resultNotificationEmail");
     
     // 注入變數到範本中
     template.className = user['班級名稱'] || "";
