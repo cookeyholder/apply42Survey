@@ -297,16 +297,21 @@ function doPost(request) {
     };
     logAdder(user, record);
 
-    // 寄送選填結果通知信
-    sendResultNotificationEmail(
-      user,
-      userEmail,
-      departmentChoices,
-      new Date().toLocaleString("zh-TW", {
-        timeZone: "Asia/Taipei",
-      }),
-      configs
-    );
+    // 如果有設定要寄送選填結果通知信，才會寄送
+    if (configs["是否寄送選填內容通知信"] === "是") {
+      sendResultNotificationEmail(
+        user,
+        userEmail,
+        departmentChoices,
+        new Date().toLocaleString("zh-TW", {
+          timeZone: "Asia/Taipei",
+        }),
+        configs
+      );
+      Logger.log("(doPost)寄送選填內容通知信給使用者 %s 成功", userEmail);
+    } else {
+      Logger.log("(doPost)未設定寄送選填內容通知信，跳過寄送步驟");
+    }
 
     // 渲染成功頁面
     return renderStudentPage(user, configs);
