@@ -157,16 +157,29 @@ function getHeaderIndex(sheet, headerName) {
  */
 function getUserFromCache(email) {
   if (!email) return null;
-  
-  const validEmailCacheKey = email.replace(/[^a-zA-Z0-9_-]/g, '_')
-  const cacheKey = CACHE_KEYS.USER_DATA_PREFIX + validEmailCacheKey;
-  const cached = cache.get(cacheKey);
-  
-  if (cached) {
-    Logger.log("(getUserFromCache)從快取取得使用者資料：%s", email);
-    return JSON.parse(cached);
+
+  try {
+    const validEmailCacheKey = getSafeKeyFromEmail(email);
+    const cacheKey = CACHE_KEYS.USER_DATA_PREFIX + validEmailCacheKey;
+
+    if (!isValidCacheKey(cacheKey)) {
+      Logger.log("(getUserFromCache)生成的快取鍵值無效：%s", cacheKey);
+      return null;
+    }
+
+    const cached = getCacheData(cacheKey);
+
+    if (cached) {
+      Logger.log("(getUserFromCache)從快取取得使用者資料：%s", email);
+      return cached;
+    }
+  } catch (error) {
+    Logger.log(
+      "(getUserFromCache)從快取讀取使用者資料時發生錯誤：%s",
+      error.message
+    );
   }
-  
+
   return null;
 }
 
@@ -180,19 +193,23 @@ function findStudentUser(email) {
     Logger.log(`(findStudentUser)examDataSheet 不存在`);
     return null;
   }
-  
+
   const userRow = findValueRow(email, examDataSheet);
-  
+
   if (userRow && userRow > 0) {
-    Logger.log('(findStudentUser)找到學生使用者，信箱：%s，行號：%d', email, userRow);
+    Logger.log(
+      "(findStudentUser)找到學生使用者，信箱：%s，行號：%d",
+      email,
+      userRow
+    );
     return {
       userRow,
       targetSheet: examDataSheet,
       idColumnIndex: getHeaderIndex(examDataSheet, "信箱"),
-      userType: "學生"
+      userType: "學生",
     };
   }
-  
+
   return null;
 }
 
@@ -206,19 +223,23 @@ function findTeacherUser(email) {
     Logger.log(`(findTeacherUser)teacherSheet 不存在`);
     return null;
   }
-  
+
   const userRow = findValueRow(email, teacherSheet);
-  
+
   if (userRow && userRow > 0) {
-    Logger.log('(findTeacherUser)找到老師使用者，信箱：%s，行號：%d', email, userRow);
+    Logger.log(
+      "(findTeacherUser)找到老師使用者，信箱：%s，行號：%d",
+      email,
+      userRow
+    );
     return {
       userRow,
       targetSheet: teacherSheet,
       idColumnIndex: getHeaderIndex(teacherSheet, "信箱"),
-      userType: "老師"
+      userType: "老師",
     };
   }
-  
+
   return null;
 }
 
@@ -246,10 +267,16 @@ function buildUserDataObject(targetSheet, userRow, userType) {
     }, {});
 
     userData.userType = userType;
-    Logger.log("(buildUserDataObject)成功建立使用者資料物件：%s", JSON.stringify(userData));
+    Logger.log(
+      "(buildUserDataObject)成功建立使用者資料物件：%s",
+      JSON.stringify(userData)
+    );
     return userData;
   } catch (error) {
-    Logger.log("(buildUserDataObject)建立使用者資料物件時發生錯誤：%s", error.message);
+    Logger.log(
+      "(buildUserDataObject)建立使用者資料物件時發生錯誤：%s",
+      error.message
+    );
     return null;
   }
 }
@@ -260,46 +287,50 @@ function buildUserDataObject(targetSheet, userRow, userType) {
  */
 function getUserData() {
   const email = Session.getActiveUser().getEmail();
-  if (!email) {
-    Logger.log("(getUserData)無法取得使用者電子郵件");
-    return null;
-  }
-  
-  // 嘗試從快取取得
-  const cachedUser = getUserFromCache(email);
-  if (cachedUser) {
-    Logger.log("(getUserData)從快取取得使用者資料：%s", email);
-    return cachedUser;
-  }
-  
-  // 嘗試在統測報名資料表搜尋
+  if (!email) return null;
+
+  const cached = getUserFromCache(email);
+  if (cached) return cached;
+
+  // 從工作表取得資料並快取
   let userData = findStudentUser(email);
-  
+
   // 若未找到學生，嘗試在老師資料表搜尋
   if (!userData) {
-    Logger.log(`(getUserData)使用者 ${email} 在統測報名資料表中未找到，嘗試在老師資料表搜尋`);
+    Logger.log(
+      `(getUserData)使用者 ${email} 在統測報名資料表中未找到，嘗試在老師資料表搜尋`
+    );
     userData = findTeacherUser(email);
   } else {
     Logger.log(`(getUserData)使用者 ${email} 在統測報名資料表中找到`);
   }
-  
+
   // 若均未找到，回傳 null
   if (!userData) {
     Logger.log(`(getUserData)使用者 ${email} 在老師及統測報名資料表中均未找到`);
     return null;
   }
-  
+
   // 建立使用者資料物件
   const { userRow, targetSheet, userType } = userData;
   const userDataObject = buildUserDataObject(targetSheet, userRow, userType);
-  
+
   if (userDataObject) {
     // 快取使用者資料（24 小時）
-    const validEmailCacheKey = email.replace(/[^a-zA-Z0-9_-]/g, '_')
-    setCacheData(CACHE_KEYS.USER_DATA_PREFIX + validEmailCacheKey, userDataObject, 86400);
-    Logger.log("(getUserData)成功取得使用者資料：%s", email);
+    const validEmailCacheKey = getSafeKeyFromEmail(email);
+
+    // 將使用者添加到快取索引，方便日後清除
+    addUserToIndex(email);
+
+    // 存儲使用者資料
+    setCacheData(
+      CACHE_KEYS.USER_DATA_PREFIX + validEmailCacheKey,
+      userDataObject,
+      86400
+    );
+    Logger.log("(getUserData)成功取得並快取使用者資料：%s", email);
   }
-  
+
   return userDataObject;
 }
 
@@ -316,7 +347,11 @@ function findUserInSheet(email, target) {
       Logger.log("(findUserInSheet)找不到使用者資料，信箱：%s", email);
       return null;
     } else {
-      Logger.log("(findUserInSheet)找到使用者資料，信箱：%s，行號：%d", email, userRow);
+      Logger.log(
+        "(findUserInSheet)找到使用者資料，信箱：%s，行號：%d",
+        email,
+        userRow
+      );
     }
 
     const headers = target
@@ -335,7 +370,10 @@ function findUserInSheet(email, target) {
 
     return userData ? userData : null;
   } catch (error) {
-    Logger.log("(findUserInSheet)在工作表資料中尋找使用者時發生錯誤：%s", error.message);
+    Logger.log(
+      "(findUserInSheet)在工作表資料中尋找使用者時發生錯誤：%s",
+      error.message
+    );
     return null;
   }
 }
@@ -412,7 +450,10 @@ function getOptionData(user = null) {
         };
         setCacheData(CACHE_KEYS.CHOICES_DATA, choicesData);
       } catch (error) {
-        Logger.log("(getOptionData)讀取志願選項資料時發生錯誤：%s", error.message);
+        Logger.log(
+          "(getOptionData)讀取志願選項資料時發生錯誤：%s",
+          error.message
+        );
         return {
           isJoined: false,
           selectedChoices: [],
@@ -460,7 +501,10 @@ function getOptionData(user = null) {
           )
           .getValues();
       } catch (error) {
-        Logger.log("(getOptionData)讀取學生選擇資料時發生錯誤：%s", error.message);
+        Logger.log(
+          "(getOptionData)讀取學生選擇資料時發生錯誤：%s",
+          error.message
+        );
         return {
           isJoined: false,
           selectedChoices: [],
@@ -521,9 +565,9 @@ function getOptionData(user = null) {
     Logger.log(
       "(getOptionData)返回資料：%s",
       JSON.stringify({
-        '是否參加集體報名': result.isJoined,
-        '選擇志願數': result.selectedChoices.filter((c) => c).length,
-        '志願選項數': result.departmentOptions.length,
+        是否參加集體報名: result.isJoined,
+        選擇志願數: result.selectedChoices.filter((c) => c).length,
+        志願選項數: result.departmentOptions.length,
       })
     );
 

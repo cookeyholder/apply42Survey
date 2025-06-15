@@ -154,7 +154,7 @@ function updateSpecificRow(row, values) {
     const startColumnIndex = headers.indexOf("是否參加集體報名");
 
     if (startColumnIndex === -1) {
-      throw new Error('(updateSpecificRow)找不到"是否參加集體報名"欄位');
+      throw new Error('(updateSpecificRow)找不到" 是否參加集體報名"欄位');
     }
 
     const startColumn = startColumnIndex + 1;
@@ -424,7 +424,11 @@ function getSheetDataSafely(sheet, requiredHeaders = []) {
 
     // 檢查工作表大小
     if (numRows > MAX_SHEET_ROWS || numCols > 100) {
-      Logger.log("(getSheetDataSafely)工作表過大：%d 列 %d 欄", numRows, numCols);
+      Logger.log(
+        "(getSheetDataSafely)工作表過大：%d 列 %d 欄",
+        numRows,
+        numCols
+      );
       return null;
     }
 
@@ -442,7 +446,10 @@ function getSheetDataSafely(sheet, requiredHeaders = []) {
         (header) => !headers.includes(header)
       );
       if (missingHeaders.length > 0) {
-        Logger.log("(getSheetDataSafely)工作表缺少必要標頭：%s", missingHeaders.join(", "));
+        Logger.log(
+          "(getSheetDataSafely)工作表缺少必要標頭：%s",
+          missingHeaders.join(", ")
+        );
         return null;
       }
     }
@@ -453,7 +460,11 @@ function getSheetDataSafely(sheet, requiredHeaders = []) {
       data = sheet.getRange(2, 1, numRows - 1, numCols).getValues();
     }
 
-    Logger.log("(getSheetDataSafely)成功讀取工作表 %s：%d 列資料", sheet.getName(), data.length);
+    Logger.log(
+      "(getSheetDataSafely)成功讀取工作表 %s：%d 列資料",
+      sheet.getName(),
+      data.length
+    );
     return { headers, data };
   } catch (error) {
     Logger.log("(getSheetDataSafely)讀取工作表時發生錯誤：%s", error.message);
@@ -474,4 +485,16 @@ function isValidEmail(email) {
     email.length <= 100 &&
     emailRegex.test(email)
   );
+}
+
+/**
+ * @description 將 email 轉換為安全的快取鍵值
+ * @param {string} email - 電子郵件地址
+ * @returns {string} 安全的快取鍵值
+ */
+function getSafeKeyFromEmail(email) {
+  if (!email || typeof email !== "string") {
+    return "";
+  }
+  return email.replace(/[^a-zA-Z0-9_-]/g, "_");
 }

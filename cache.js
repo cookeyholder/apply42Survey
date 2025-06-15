@@ -11,6 +11,7 @@ const CACHE_KEYS = {
   EXAM_DATA: "examData",
   CHOICES_DATA: "choicesData",
   USER_DATA_PREFIX: "userData_",
+  USER_INDEX: "userIndex", // 使用者索引的快取鍵值
 };
 
 /**
@@ -59,9 +60,9 @@ function cleanupCache(keyPrefix) {
     cache.remove(`${keyPrefix}_chunks`);
     cache.remove(keyPrefix);
 
-    Logger.log("已清理快取：%s", keyPrefix);
+    Logger.log("(cleanupCache)已清理快取：%s", keyPrefix);
   } catch (error) {
-    Logger.log("清理快取時發生錯誤：%s", error.message);
+    Logger.log("(cleanupCache)清理快取時發生錯誤：%s", error.message);
   }
 }
 
@@ -94,7 +95,11 @@ function setChunkedCacheData(key, data, expiration = CACHE_EXPIRATION) {
 
     // 檢查資料大小
     if (jsonStr.length > MAX_CACHE_SIZE) {
-      Logger.log("資料過大，無法快取：%s (%d 字元)", key, jsonStr.length);
+      Logger.log(
+        "(setChunkedCacheData)資料過大，無法快取：%s (%d 字元)",
+        key,
+        jsonStr.length
+      );
       return;
     }
 
@@ -108,7 +113,11 @@ function setChunkedCacheData(key, data, expiration = CACHE_EXPIRATION) {
     }
 
     if (chunks.length > MAX_CHUNKS) {
-      Logger.log("分段數量過多，無法快取：%s (%d 段)", key, chunks.length);
+      Logger.log(
+        "(setChunkedCacheData)分段數量過多，無法快取：%s (%d 段)",
+        key,
+        chunks.length
+      );
       return;
     }
 
@@ -124,13 +133,16 @@ function setChunkedCacheData(key, data, expiration = CACHE_EXPIRATION) {
     // 批次寫入快取
     cache.putAll(cacheObj, validExpiration);
     Logger.log(
-      "已分段快取資料：%s (%d 段，%d 字元)",
+      "(setChunkedCacheData)已分段快取資料：%s (%d 段，%d 字元)",
       key,
       chunks.length,
       jsonStr.length
     );
   } catch (error) {
-    Logger.log("設定分段快取時發生錯誤：%s", error.message);
+    Logger.log(
+      "(setChunkedCacheData)設定分段快取時發生錯誤：%s",
+      error.message
+    );
     cleanupCache(key); // 清理可能損壞的快取
   }
 }
@@ -160,7 +172,7 @@ function getChunkedCacheData(key) {
     const chunks = cache.getAll(keys);
 
     if (!chunks || Object.keys(chunks).length !== numChunks) {
-      Logger.log("快取分段不完整，清理：%s", key);
+      Logger.log("(getChunkedCacheData)快取分段不完整，清理：%s", key);
       cleanupCache(key);
       return null;
     }
@@ -172,15 +184,22 @@ function getChunkedCacheData(key) {
     ).join("");
 
     if (!jsonStr) {
-      Logger.log("快取資料為空：%s", key);
+      Logger.log("(getChunkedCacheData)快取資料為空：%s", key);
       return null;
     }
 
     const data = JSON.parse(jsonStr);
-    Logger.log("成功讀取分段快取：%s (%d 段)", key, numChunks);
+    Logger.log(
+      "(getChunkedCacheData)成功讀取分段快取：%s (%d 段)",
+      key,
+      numChunks
+    );
     return data;
   } catch (error) {
-    Logger.log("讀取分段快取時發生錯誤：%s", error.message);
+    Logger.log(
+      "(getChunkedCacheData)讀取分段快取時發生錯誤：%s",
+      error.message
+    );
     cleanupCache(key); // 清理損壞的快取
     return null;
   }
@@ -261,16 +280,16 @@ function getCacheData(key) {
     }
 
     const data = JSON.parse(jsonStr);
-    Logger.log("成功讀取快取：%s", key);
+    Logger.log("(getCacheData)成功讀取快取：%s", key);
     return data;
   } catch (error) {
-    Logger.log("讀取快取時發生錯誤：%s", error.message);
+    Logger.log("(getCacheData)讀取快取時發生錯誤：%s", error.message);
     // 清理可能損壞的快取
     try {
       const cache = CacheService.getScriptCache();
       cache.remove(key);
     } catch (cleanupError) {
-      Logger.log("清理損壞快取失敗：%s", cleanupError.message);
+      Logger.log("(getCacheData)清理損壞快取失敗：%s", cleanupError.message);
     }
     return null;
   }
@@ -288,24 +307,187 @@ function removeCacheData(key) {
     }
 
     cleanupCache(key);
-    Logger.log("已移除快取：%s", key);
+    Logger.log("(removeCacheData)已移除快取：%s", key);
   } catch (error) {
-    Logger.log("移除快取時發生錯誤：%s", error.message);
+    Logger.log("(removeCacheData)移除快取時發生錯誤：%s", error.message);
   }
 }
 
 /**
  * @description 清除所有快取資料
+ * @returns {boolean} 是否成功清除所有快取
  */
 function clearAllCache() {
   try {
-    // 清除已知的快取鍵值
+    const cache = CacheService.getScriptCache();
+    const userCacheKeys = getAllUserCacheKeys();
+
+    // 清除固定的快取鍵值（先嘗試針對性清除）
     for (const cacheKey of Object.values(CACHE_KEYS)) {
       cleanupCache(cacheKey);
     }
 
-    Logger.log("已清除所有快取資料");
+    for (const userKey of userCacheKeys) {
+      cleanupCache(userKey);
+    }
+    Logger.log("(clearAllCache)已清除所有固定快取鍵值和使用者快取鍵值");
+
+    // 使用暴力方式：直接重置整個快取空間
+    // 這將清除所有快取資料，包含以 userData_ 為前綴的使用者快取
+    try {
+      cache.removeAll([]); // 傳入空陣列會清除所有快取
+      Logger.log("(clearAllCache)已重置所有快取資料（包含使用者資料快取）");
+    } catch (resetError) {
+      Logger.log("(clearAllCache)重置快取時發生錯誤：%s", resetError.message);
+      return false;
+    }
+
+    Logger.log("(clearAllCache)已成功清除所有快取資料");
+    return true;
   } catch (error) {
-    Logger.log("清除所有快取時發生錯誤：%s", error.message);
+    Logger.log("(clearAllCache)清除所有快取時發生錯誤：%s", error.message);
+    return false;
+  }
+}
+
+/**
+ * @description 內部清除所有快取實作，供 main.js 呼叫以避免函式名稱衝突
+ * @returns {boolean} 是否成功清除所有快取
+ */
+function clearAllCacheInternal() {
+  return clearAllCache(); // 呼叫本檔案中的 clearAllCache
+}
+
+/**
+ * @description 將使用者添加到快取索引中
+ * @param {string} email - 使用者電子郵件
+ * @returns {boolean} 是否成功添加到索引
+ */
+function addUserToIndex(email) {
+  try {
+    if (!email) {
+      Logger.log("(addUserToIndex)無效的電子郵件");
+      return false;
+    }
+
+    const cache = CacheService.getScriptCache();
+    const safeEmail = getSafeKeyFromEmail(email);
+
+    // 從快取獲取當前索引
+    let userIndex = [];
+    const indexStr = cache.get(CACHE_KEYS.USER_INDEX);
+
+    if (indexStr) {
+      try {
+        userIndex = JSON.parse(indexStr);
+      } catch (e) {
+        Logger.log("(addUserToIndex)解析使用者索引發生錯誤：%s", e.message);
+        userIndex = [];
+      }
+    }
+
+    // 檢查是否已存在，若不存在則添加
+    if (Array.isArray(userIndex) && !userIndex.includes(safeEmail)) {
+      userIndex.push(safeEmail);
+      cache.put(
+        CACHE_KEYS.USER_INDEX,
+        JSON.stringify(userIndex),
+        MAX_CACHE_EXPIRATION
+      );
+      Logger.log("(addUserToIndex)已新增使用者到快取索引：%s", email);
+    }
+
+    return true;
+  } catch (error) {
+    Logger.log("(addUserToIndex)添加使用者到索引時發生錯誤：%s", error.message);
+    return false;
+  }
+}
+
+/**
+ * @description 從快取索引中移除使用者
+ * @param {string} email - 使用者電子郵件
+ * @returns {boolean} 是否成功移除
+ */
+function removeUserFromIndex(email) {
+  try {
+    if (!email) {
+      Logger.log("(removeUserFromIndex)無效的電子郵件");
+      return false;
+    }
+
+    const cache = CacheService.getScriptCache();
+    const safeEmail = getSafeKeyFromEmail(email);
+
+    // 從快取獲取當前索引
+    const indexStr = cache.get(CACHE_KEYS.USER_INDEX);
+    if (!indexStr) {
+      return true; // 如果索引不存在，視為移除成功
+    }
+
+    try {
+      const userIndex = JSON.parse(indexStr);
+      if (!Array.isArray(userIndex)) {
+        Logger.log("(removeUserFromIndex)索引格式無效");
+        return false;
+      }
+
+      // 從索引中移除
+      const newIndex = userIndex.filter((e) => e !== safeEmail);
+      cache.put(
+        CACHE_KEYS.USER_INDEX,
+        JSON.stringify(newIndex),
+        MAX_CACHE_EXPIRATION
+      );
+
+      if (newIndex.length !== userIndex.length) {
+        Logger.log("(removeUserFromIndex)已從快取索引中移除使用者：%s", email);
+      }
+
+      return true;
+    } catch (e) {
+      Logger.log(
+        "(removeUserFromIndex)處理使用者索引時發生錯誤：%s",
+        e.message
+      );
+      return false;
+    }
+  } catch (error) {
+    Logger.log(
+      "(removeUserFromIndex)從索引移除使用者時發生錯誤：%s",
+      error.message
+    );
+    return false;
+  }
+}
+
+/**
+ * @description 取得所有使用者的快取鍵值
+ * @returns {string[]} 使用者快取鍵值陣列
+ */
+function getAllUserCacheKeys() {
+  try {
+    const cache = CacheService.getScriptCache();
+    const indexStr = cache.get(CACHE_KEYS.USER_INDEX);
+
+    if (!indexStr) {
+      return [];
+    }
+
+    const userIndex = JSON.parse(indexStr);
+    if (!Array.isArray(userIndex)) {
+      Logger.log("(getAllUserCacheKeys)索引格式無效");
+      return [];
+    }
+
+    return userIndex.map(
+      (safeEmail) => CACHE_KEYS.USER_DATA_PREFIX + safeEmail
+    );
+  } catch (error) {
+    Logger.log(
+      "(getAllUserCacheKeys)取得使用者快取鍵值時發生錯誤：%s",
+      error.message
+    );
+    return [];
   }
 }

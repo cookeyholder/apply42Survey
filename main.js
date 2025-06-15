@@ -24,7 +24,7 @@ function onOpen() {
       .createMenu("志願調查系統")
       .addItem("匯出報名用CSV", "exportCsv")
       .addItem("各志願選填人數統計", "showStatisticsPage")
-      .addItem("清除快取", "clearAllCache")
+      .addItem("清除快取", "clearAllCacheInternal")
       .addToUi();
     Logger.log("(onOpen)功能表建立成功");
   } catch (error) {
@@ -223,7 +223,11 @@ function doPost(request) {
     }
 
     if (now - endTime > tolerance) {
-      Logger.log("(doPost)提交時間已過截止時間，現在：%s，截止：%s", now, endTime);
+      Logger.log(
+        "(doPost)提交時間已過截止時間，現在：%s，截止：%s",
+        now,
+        endTime
+      );
       return ContentService.createTextOutput("志願調查已結束").setMimeType(
         ContentService.MimeType.TEXT
       );
@@ -277,7 +281,7 @@ function doPost(request) {
       ? [joinedParam, ...departmentChoices]
       : [joinedParam, "", "", "", "", "", ""];
 
-    if (updateSpecificRow(row, updateData)){
+    if (updateSpecificRow(row, updateData)) {
       Logger.log("(doPost)成功更新使用者 %s 的志願資料", JSON.stringify(user));
     }
 
@@ -296,7 +300,7 @@ function doPost(request) {
     // 寄送選填結果通知信
     sendResultNotificationEmail(
       user,
-      userEmail, 
+      userEmail,
       departmentChoices,
       new Date().toLocaleString("zh-TW", {
         timeZone: "Asia/Taipei",
@@ -341,24 +345,6 @@ function renderStudentPage(user, configs) {
   } catch (error) {
     Logger.log("(renderStudentPage)渲染成功頁面時發生錯誤：%s", error.message);
     throw error;
-  }
-}
-
-/**
- * @description 清除所有快取（管理功能）
- */
-function clearAllCache() {
-  try {
-    const cache = CacheService.getScriptCache();
-    cache.removeAll(Object.values(CACHE_KEYS));
-    Logger.log("(clearAllCache)已清除所有快取");
-
-    const ui = SpreadsheetApp.getUi();
-    ui.alert("快取已清除", "所有快取資料已成功清除。", ui.ButtonSet.OK);
-  } catch (error) {
-    Logger.log("(clearAllCache)清除快取時發生錯誤：%s", error.message);
-    const ui = SpreadsheetApp.getUi();
-    ui.alert("錯誤", "清除快取時發生錯誤：" + error.message, ui.ButtonSet.OK);
   }
 }
 
