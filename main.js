@@ -126,9 +126,9 @@ function doGet(request) {
  * @param {Object} configs - 系統參數
  * @returns {HtmlOutput} HTML 輸出
  */
-function renderStudentPage(user, configs) {
+function renderStudentPage(user, configs, templateName = "index") {
   try {
-    const template = HtmlService.createTemplateFromFile("index");
+    const template = HtmlService.createTemplateFromFile(templateName);
     template.loginEmail = Session.getActiveUser().getEmail();
     template.serviceUrl = getServiceUrl();
     template.user = user;
@@ -314,42 +314,12 @@ function doPost(request) {
     }
 
     // 渲染成功頁面
-    return renderStudentPage(user, configs);
+    return renderStudentPage(user, configs, "success");
   } catch (err) {
     Logger.log("(doPost)發生錯誤：%s\n%s", err.message, err.stack);
     return ContentService.createTextOutput("系統錯誤，請稍後再試").setMimeType(
       ContentService.MimeType.TEXT
     );
-  }
-}
-
-/**
- * @description 渲染成功頁面
- * @param {Object} user - 使用者資料
- * @param {Object} configs - 系統參數
- * @returns {HtmlOutput} HTML 輸出
- */
-function renderStudentPage(user, configs) {
-  try {
-    const template = HtmlService.createTemplateFromFile("success");
-    template.loginEmail = Session.getActiveUser().getEmail();
-    template.serviceUrl = getServiceUrl();
-    template.user = user;
-    template.configs = configs;
-    template.notifications = getNotifications(configs);
-    template.limitOfSchools = getLimitOfSchools();
-
-    const optionData = getOptionData(user);
-    template.isJoined = optionData.isJoined;
-    template.selectedChoices = optionData.selectedChoices;
-    template.departmentOptions = optionData.departmentOptions;
-
-    return setXFrameOptionsSafely(
-      template.evaluate().setTitle("四技二專甄選入學志願調查系統")
-    );
-  } catch (error) {
-    Logger.log("(renderStudentPage)渲染成功頁面時發生錯誤：%s", error.message);
-    throw error;
   }
 }
 
