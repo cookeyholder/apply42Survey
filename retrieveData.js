@@ -404,6 +404,11 @@ function getNotifications(configs) {
       }
     });
 
+    Logger.log(
+      "(getNotifications)成功取得通知訊息：%s",
+      notifications.join("")
+    );
+
     return notifications.join("");
   } catch (error) {
     Logger.log("getNotifications() 發生錯誤：%s", error.message);
