@@ -513,9 +513,6 @@
         function checkIfOverLimit(changedEl) {
             const limitOfSchools = <?!= JSON.stringify(limitOfSchools) ?>;
 
-            // 除錯：檢查 limitOfSchools 是否為空
-            console.log('limitOfSchools:', limitOfSchools);
-
             if (!limitOfSchools || Object.keys(limitOfSchools).length === 0) {
                 console.log('limitOfSchools 為空或未定義');
                 return false;
@@ -534,11 +531,7 @@
                 }
             });
 
-            console.log('學校統計:', counts);
-
             for (const schoolCode in counts) {
-                console.log(`檢查學校 ${schoolCode}:`, limitOfSchools[schoolCode]);
-
                 if (limitOfSchools[schoolCode] && counts[schoolCode] > limitOfSchools[schoolCode].limitsOfSchool) {
                     if (changedEl) {
                         changedEl.selectedIndex = 0;
