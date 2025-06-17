@@ -156,10 +156,10 @@ function renderStudentPage(user, configs, templateName = "index") {
  * @param {Object} configs - 系統參數
  * @returns {HtmlOutput} HTML 輸出
  */
-function renderTeacherPage(user, configs) {
+function renderTeacherPage(user, configs, templateName = "teacherView") {
   try {
     const studentData = getTraineesDepartmentChoices(user);
-    const template = HtmlService.createTemplateFromFile("teacherView");
+    const template = HtmlService.createTemplateFromFile(templateName);
 
     template.loginEmail = Session.getActiveUser().getEmail();
     template.serviceUrl = getServiceUrl();
