@@ -457,16 +457,12 @@
             const incomeType = '<?= user["繳費身分"] ?>';
             const numberSelectedChoices = Array.from(document.querySelectorAll('.departmentChoices'))
                 .filter(el => el.value !== '' && el.value !== '0').length;
-            let fee = 200; // 審查費
+            let fee = 0;
+            
             if (isJoined) { // 參加集體報名
-                const allEmpty = Array.from(
-                    document.querySelectorAll('.departmentChoices')
-                ).every(el => el.value === '');
-
-                if (allEmpty) {
-                    fee = 0; // 若沒有選擇任何志願，報名費用為 0
+                if (numberSelectedChoices > 0) {
+                    fee = 200 + (numberSelectedChoices * 100); // 審查費 + 志願費用
                 }
-                fee += numberSelectedChoices * 100;
             } else { // 不參加集體報名
                 fee = 0;
             }
@@ -474,7 +470,7 @@
             if (incomeType === '低收入戶' || numberSelectedChoices === 0) {
                 fee = 0;
             } else if (incomeType === '中低收入戶') {
-                fee *= 0.4;
+                fee = Math.round(fee * 0.4);
             }
             document.getElementById('registrationFee').textContent = fee;
         }
