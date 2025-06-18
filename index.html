@@ -240,7 +240,6 @@
 
         function stopElementsOfForms() {
             const serviceUrl = "<?= serviceUrl ?>";
-            countdownTimer.innerHTML = "<span id='countdownTimer' class='text-danger'><strong>報名已截止囉！</strong></span>";
             clearInterval(timerInterval);
 
             // 停用所有表單元素
@@ -264,54 +263,18 @@
                 select.disabled = true;
             });
 
-            // 只有在載入時未截止，但現在截止的情況下，才顯示開啟新分頁
-            if (!wasExpiredOnLoad) {
-                // 自動重新載入，使用適合 Web App 的方法
-                countdownTimer.innerHTML = "<span class='text-danger'><strong>報名已截止囉！正在重新載入頁面...</strong></span>";
-
-                // 延遲 500ms 後嘗試重新載入
-                setTimeout(() => {
-                    try {
-                        // 直接使用 window.open 開啟新分頁
-                        console.log('開啟新分頁:', serviceUrl);
-                        window.open(serviceUrl, '_blank');
-
-                        // 同時顯示訊息讓使用者知道新分頁已開啟
-                        setTimeout(() => {
-                            countdownTimer.innerHTML = `
-                                    <div class="alert alert-success text-center" role="alert">
-                                        <h5 class="alert-heading text-danger">
-                                            <strong>報名已截止囉！</strong>
-                                        </h5>
-                                        <p>新分頁已開啟，請切換到新分頁繼續使用</p>
-                                        <p>如果新分頁沒有開啟，請點擊下方連結：</p>
-                                        <a href="${serviceUrl}" target="_blank" class="btn btn-primary">
-                                            開啟新分頁
-                                        </a>
-                                    </div>
-                                `;
-                        }, 1000);
-
-                    } catch (error) {
-                        console.error('開啟新分頁失敗:', error);
-                        // 如果開啟新分頁失敗，顯示手動連結
-                        countdownTimer.innerHTML = `
+            countdownTimer.innerHTML = `
                                 <div class="alert alert-warning text-center" role="alert">
                                     <h5 class="alert-heading text-danger">
-                                        <strong>報名已截止囉！</strong>
+                                        <strong>報名經已截止囉！</strong>
                                     </h5>
-                                    <p>請點擊下方連結重新開啟系統</p>
-                                    <a href="${serviceUrl}" target="_blank" class="btn btn-primary">
-                                        重新開啟系統
-                                    </a>
                                 </div>
                             `;
-                    }
-                }, 500);
-            }
-            // 如果載入時已經截止，就不執行自動重新載入
 
-            return;
+            // 只有在載入時未截止，但現在截止的情況下，才顯示開啟新分頁
+            if (!wasExpiredOnLoad) {
+                reloadPage();
+            }
         }
 
         function formatDateTime(date) {
@@ -613,7 +576,6 @@
             return false;
         }
 
-        // --- Statistics Tab Functions ---
         let rawDataStats = {};
 
         function populateGroupFilterStats(data) {
@@ -741,34 +703,15 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
-        // --- End of Statistics Tab Functions ---
 
         // 處理 Google Apps Script Web App 中的頁面重新載入
         function reloadPage() {
             const serviceUrl = "<?= serviceUrl ?>";
             try {
-                console.log('開啟新分頁:', serviceUrl);
-                // 直接使用 window.open 開啟新分頁
-                window.open(serviceUrl, '_blank');
-
-                // 提示使用者切換到新分頁
-                setTimeout(() => {
-                    alert('新分頁已開啟，請切換到新分頁繼續使用系統');
-                }, 500);
-
+                console.log('重新載入頁面:', serviceUrl);
+                window.open(serviceUrl, '_top');
             } catch (error) {
-                console.error('開啟新分頁失敗:', error);
-                // 如果開啟新分頁失敗，提示使用者手動開啟
-                alert('無法自動開啟新分頁，請手動複製以下連結到新分頁：\n' + serviceUrl);
-
-                // 嘗試複製連結到剪貼簿
-                try {
-                    navigator.clipboard.writeText(serviceUrl).then(() => {
-                        alert('連結已複製到剪貼簿，請貼到新分頁中');
-                    });
-                } catch (clipboardError) {
-                    console.error('無法複製到剪貼簿:', clipboardError);
-                }
+                console.error('重新載入失敗:', error);
             }
         }
     </script>
