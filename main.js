@@ -126,15 +126,18 @@ function doGet(request) {
  * @param {Object} configs - 系統參數
  * @returns {HtmlOutput} HTML 輸出
  */
-function renderStudentPage(user, configs, templateName = "index") {
+function renderStudentPage(user, configs, wishReceived = false) {
   try {
-    const template = HtmlService.createTemplateFromFile(templateName);
+    const template = HtmlService.createTemplateFromFile("index");
     template.loginEmail = Session.getActiveUser().getEmail();
     template.serviceUrl = getServiceUrl();
     template.user = user;
     template.configs = configs;
     template.notifications = getNotifications(configs);
     template.limitOfSchools = getLimitOfSchools();
+    template.wishesReceivedMessage = wishReceived
+      ? getWishesReceivedMessage()
+      : "";
 
     const optionData = getOptionData(user);
     template.isJoined = optionData.isJoined;
@@ -148,6 +151,12 @@ function renderStudentPage(user, configs, templateName = "index") {
     Logger.log("(renderStudentPage)渲染學生頁面時發生錯誤：%s", error.message);
     throw error;
   }
+}
+
+function getWishesReceivedMessage() {
+  return `<li>
+              已經收到您所選擇的志願了，以下是您目前所選的志願，若想要更改志願，請於截止時間前重新填表。
+          </li>`;
 }
 
 /**
@@ -314,7 +323,7 @@ function doPost(request) {
     }
 
     // 渲染成功頁面
-    return renderStudentPage(user, configs, "success");
+    return renderStudentPage(user, configs, (wishReceived = true));
   } catch (err) {
     Logger.log("(doPost)發生錯誤：%s\n%s", err.message, err.stack);
     return ContentService.createTextOutput("系統錯誤，請稍後再試").setMimeType(
