@@ -343,13 +343,14 @@ function setXFrameOptionsSafely(htmlOutput) {
     if (
       HtmlService &&
       HtmlService.XFrameOptionsMode &&
-      HtmlService.XFrameOptionsMode.SAMEORIGIN
+      HtmlService.XFrameOptionsMode.ALLOWALL
     ) {
+      // 設定為 ALLOWALL 以允許在任何 frame 中顯示
       return htmlOutput.setXFrameOptionsMode(
-        HtmlService.XFrameOptionsMode.SAMEORIGIN
+        HtmlService.XFrameOptionsMode.ALLOWALL
       );
     } else {
-      Logger.log("XFrameOptionsMode.SAMEORIGIN 未定義，跳過設定");
+      Logger.log("XFrameOptionsMode.ALLOWALL 未定義，跳過設定");
       return htmlOutput;
     }
   } catch (error) {

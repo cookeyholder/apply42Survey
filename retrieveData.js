@@ -15,7 +15,20 @@ const REQUIRED_STUDENT_HEADERS = ["信箱", "是否參加集體報名"];
  */
 function getServiceUrl() {
   try {
-    return ScriptApp.getService().getUrl();
+    const effectiveUserEmail = Session.getEffectiveUser().getEmail();
+    const effectiveUserDomain = effectiveUserEmail.split("@")[1];
+    const url = ScriptApp.getService().getUrl();
+    const regex = /\/s\/(.+?)\//;
+    const serviceId = url.match(regex)[1];
+    const mode = url.split("/").pop();
+    return (
+      "https://script.google.com/a/macros/" +
+      effectiveUserDomain +
+      "/s/" +
+      serviceId +
+      "/" +
+      mode
+    );
   } catch (error) {
     Logger.log("取得服務 URL 失敗：%s", error.message);
     return "";
