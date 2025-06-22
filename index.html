@@ -187,6 +187,32 @@
         </div>
     </div>
 
+    <!-- 報名截止 Modal -->
+    <div class="modal fade" id="expiredModal" tabindex="-1" aria-labelledby="expiredModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="expiredModalLabel">系統通知</h5>
+                    <!-- <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning text-center" role="alert">
+                        <h5 class="alert-heading text-danger">
+                            <strong>報名已截止囉！</strong>
+                        </h5>
+                        <p>請點擊下方連結重新載入頁面：</p>
+                        <a href="<?= serviceUrl ?>" target="_top" class="btn btn-primary">
+                            重新載入報名系統
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button> -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="text-center py-4 text-muted px-2">
         ©
         <?= configs["系統名稱"] ?>
@@ -267,10 +293,25 @@
                                 </div>
                             `;
 
-            // 只有在載入時未截止，但現在截止的情況下，才顯示開啟新分頁
+            // 只有在載入時未截止，但現在截止的情況下，才顯示 modal 和開啟新分頁
             if (!wasExpiredOnLoad) {
-                reloadPage();
+                hideAllFormsAndButtons();
+                showExpiredModal();
             }
+        }
+
+        function showExpiredModal() {
+            const serviceUrl = "<?= serviceUrl ?>";
+
+            // 更新 modal 中的連結
+            const modalLink = document.querySelector('#expiredModal .btn-primary');
+            if (modalLink) {
+                modalLink.href = serviceUrl;
+            }
+
+            // 顯示 modal
+            const expiredModal = new bootstrap.Modal(document.getElementById('expiredModal'));
+            expiredModal.show();
         }
 
         function formatDateTime(date) {
@@ -662,17 +703,14 @@
             console.error('統計資料載入錯誤:', error);
 
             const errorMessage = error.message || '未知錯誤';
-            const isPermissionError = errorMessage.includes('權限') || errorMessage.includes('存取');
-
-            if (isPermissionError) {
+            const isPermissionError = errorMessage.includes('權限') || errorMessage.includes('存取'); if (isPermissionError) {
                 errorDiv.innerHTML = `
                     <div class="alert alert-warning" role="alert">
                         <h4 class="alert-heading">權限問題</h4>
                         <p>${errorMessage}</p>
                         <hr>
                         <p class="mb-0">
-                            <button class="btn btn-primary" onclick="reloadPage()">重新載入頁面</button>
-                            <small class="text-muted">或聯絡系統管理員</small>
+                            <small class="text-muted">請聯絡系統管理員</small>
                         </p>
                     </div>
                 `;
@@ -683,7 +721,7 @@
                         <p>載入統計資料時發生錯誤：${errorMessage}</p>
                         <hr>
                         <p class="mb-0">
-                            <button class="btn btn-primary" onclick="reloadPage()">重新載入頁面</button>
+                            <small class="text-muted">請聯絡系統管理員</small>
                         </p>
                     </div>
                 `;
@@ -700,28 +738,36 @@
                 .replace(/'/g, "&#039;");
         }
 
-        // 處理 Google Apps Script Web App 中的頁面重新載入
-        function reloadPage() {
-            const serviceUrl = "<?= serviceUrl ?>";
+        // 隱藏所有表單和送出按鈕的函式
+        function hideAllFormsAndButtons() {
             try {
-                console.log('重新載入頁面:', serviceUrl);
-                // 嘗試在最上層視窗中開啟，避免 frame 限制
-                if (window.top && window.top !== window) {
-                    // 如果在 iframe 中，在最上層視窗開啟
-                    window.top.location.href = serviceUrl;
-                } else {
-                    // 如果不在 iframe 中，直接重新載入
-                    window.location.href = serviceUrl;
+                // 隱藏所有表單
+                const forms = document.querySelectorAll('form');
+                forms.forEach(form => {
+                    form.style.display = 'none';
+                });
+
+                // 隱藏所有送出按鈕
+                const submitButtons = document.querySelectorAll('button[type="submit"]');
+                submitButtons.forEach(button => {
+                    button.style.display = 'none';
+                });
+
+                // 隱藏特定的卡片區塊
+                const isJoinedCard = document.getElementById('isJoinedCard');
+                const departmentChoicesCard = document.getElementById('departmentChoicesCard');
+
+                if (isJoinedCard) {
+                    isJoinedCard.style.display = 'none';
                 }
+
+                if (departmentChoicesCard) {
+                    departmentChoicesCard.style.display = 'none';
+                }
+
+                console.log('已隱藏所有表單和送出按鈕');
             } catch (error) {
-                console.error('重新載入失敗:', error);
-                // 如果上述方法失敗，嘗試其他方法
-                try {
-                    window.location.reload();
-                } catch (error2) {
-                    console.error('頁面重新整理也失敗:', error2);
-                    alert('頁面重新載入失敗，請手動重新整理頁面或重新登入 Google 帳號。');
-                }
+                console.error('隱藏表單和按鈕時發生錯誤:', error);
             }
         }
     </script>
