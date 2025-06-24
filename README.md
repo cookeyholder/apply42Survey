@@ -35,19 +35,18 @@
 使用 HTML、CSS 和 JavaScript (透過 `HtmlService`) 產生使用者介面。
 * `index.html`: 學生填報介面。
 * `teacherView.html`: 老師查詢介面。
-* `success.html`: 學生提交成功頁面。
 * `resultNotificationEmail.html`: 志願選填結果通知信範本。
 * `statisticsTemplate.html`: 志願選填統計頁面。
 
 ### 後端：
-Google Apps Script (`.js`檔案) 處理業務邏輯、資料存取和使用者驗證。
-* `main.js`: 處理主要的 HTTP GET/POST 請求、頁面渲染、選單建立。
-* `retrieveData.js`: 負責從 Google Sheets 取得設定、使用者資料、志願選項等。
-* `utilities.js`: 提供共用工具函式，如資料驗證、在試算表中尋找資料、更新資料列、CSV 匯出等。
-* `teacher.js`: 處理老師相關功能，如取得班級學生志願資料。
-* `cache.js`: 處理快取邏輯，以提升系統效能與回應速度。
-* `mail.js`: 處理電子郵件通知相關功能。
-* `statistics.js`: 處理志願選填統計資料分析與顯示。
+Google Apps Script (`.gs`檔案) 處理業務邏輯、資料存取和使用者驗證。
+* `main.gs`: 處理主要的 HTTP GET/POST 請求、頁面渲染、選單建構。
+* `retrieveData.gs`: 負責從 Google Sheets 取得設定、使用者資料、志願選項等。
+* `utilities.gs`: 提供共用工具**函式**，如資料驗證、在試算表中尋找資料、更新資料列、CSV 匯出等。
+* `teacher.gs`: 處理老師相關功能，如取得班級學生志願資料。
+* `cache.gs`: 處理快取邏輯，以提升系統效能與回應速度。
+* `mail.gs`: 處理電子郵件通知相關功能。
+* `statistics.gs`: 處理志願選填統計資料分析與顯示。
 
 ### 資料庫：
 Google Sheets 工作表作為系統資料庫。
@@ -98,8 +97,8 @@ Google Sheets 工作表作為系統資料庫。
    * 在 Google Sheet 中，點選「擴充功能」 > 「Apps Script」。
 
 3. **複製程式碼：**
-   * 將本專案中的所有 `.js` 和 `.html` 檔案的內容，分別複製到 Apps Script 編輯器中對應的檔案。
-   * 注意：在 Apps Script 中，JavaScript 檔案使用 `.gs` 副檔名，但內容與 `.js` 相同。
+   * 將本專案中的所有 `.gs` 和 `.html` 檔案的內容，分別複製到 Apps Script 編輯器中對應的檔案。
+   * 在 Apps Script 中，JavaScript 檔案使用 `.gs` 副檔名。
    * 確保 `appsscript.json` 檔案內容正確，此檔案定義了專案的執行環境、時區和必要的權限。
 
 4. **設定必要參數：**
@@ -114,12 +113,12 @@ Google Sheets 工作表作為系統資料庫。
    * 系統會要求授權，請依照指示完成授權步驟，允許指令碼存取您的 Google 帳戶資料 (試算表、郵件、使用者資訊等)。
 
 6. **部署為網頁應用程式：**
-   * 在 Apps Script 編輯器中，點選右上角的「部署」 > 「新增部署作業」。
+   * 在 Apps Script 編輯器中，點選右上角的「部署」 > 「建立新部署」。
    * 選擇類型為「網頁應用程式」。
    * 在「設定」中：
      * **說明：** (選填) 輸入部署說明。
-     * **執行應用程式的身分：** 選擇「我」。
-     * **誰可以存取：** 選擇「知道連結的任何人」(或根據學校需求選擇更嚴格的選項)。
+     * **執行身份：** 選擇「我」。
+     * **誰可以存取：** 建議選擇「所有人」(或根據學校需求選擇適當的選項)。
    * 點選「部署」。
    * 複製產生的「網頁應用程式網址」，此網址即為學生和老師存取系統的入口。
 
@@ -178,7 +177,7 @@ Google Sheets 工作表作為系統資料庫。
 2. **管理端：** 
    * 可從 Google Sheets 中的「志願調查系統」選單開啟統計頁面。
    * 可依群(類)別篩選查看不同群(類)的統計結果。
-3. **功能實現：** 由 `statistics.js` 負責處理統計資料的收集和分析。
+3. **功能實現：** 由 `statistics.gs` 負責處理統計資料的收集和分析。
 
 ## 快取機制
 
